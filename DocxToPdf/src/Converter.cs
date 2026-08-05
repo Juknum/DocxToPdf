@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using DocumentFormat.OpenXml.Packaging;
 using DocxToPdf.Fonts;
+using DocxToPdf.Model;
+using DocxToPdf.Parsing;
 using PdfSharp.Pdf;
 
 namespace DocxToPdf {
@@ -10,6 +12,15 @@ namespace DocxToPdf {
 		static Converter() {
 			// Register cross-platform font resolver for PDFsharp
 			CrossPlatformFontResolver.Register();
+		}
+
+		public static DocumentModel Parse(string wordFilePath) {
+			if (!File.Exists(wordFilePath)) {
+				throw new FileNotFoundException($"Input document not found: '{wordFilePath}'");
+			}
+
+			using WordprocessingDocument wordDoc = WordprocessingDocument.Open(wordFilePath, false);
+			return DocxParser.Parse(wordDoc);
 		}
 
 		public static void Convert(string wordFilePath, string outputPdfFilePath) {
@@ -26,13 +37,15 @@ namespace DocxToPdf {
 			}
 
 			using WordprocessingDocument wordDoc = WordprocessingDocument.Open(wordFilePath, false);
+			DocumentModel docModel = DocxParser.Parse(wordDoc);
+
 			using PdfDocument pdfDoc = new PdfDocument();
 
-			// Initial stub PDF page generation until layout engine (Phase 2 & 3) is implemented
+			// Initial stub PDF page generation until layout engine (Phase 3) is implemented
 			PdfPage page = pdfDoc.AddPage();
 			pdfDoc.Save(outputPdfFilePath);
 
-			Console.WriteLine($"Generated initial PDF output at '{outputPdfFilePath}'.");
+			Console.WriteLine($"Successfully parsed document ({docModel.Sections.Count} section(s)). Generated stub PDF output at '{outputPdfFilePath}'.");
 		}
 	}
 }
