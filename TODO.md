@@ -42,17 +42,17 @@ This document tracks the phased implementation plan for replacing `FreeSpire.Doc
 ---
 
 ### Phase 3: Layout Engine & PDF Rendering
-- [ ] **3.1 Line Wrapping & Text Measurement**:
+- [x] **3.1 Line Wrapping & Text Measurement**:
   - Measure text run dimensions using `XGraphics.MeasureString`.
   - Calculate word-wrapping within page margins and table cell bounds.
-- [ ] **3.2 Flow Layout & Page Break Controller**:
+- [x] **3.2 Flow Layout & Page Break Controller**:
   - Maintain vertical cursor (`YPosition`).
   - Automatically create new PDF pages (`pdf.AddPage()`) when content exceeds `PageHeight - BottomMargin`.
   - Render persistent headers and footers per page.
-- [ ] **3.3 Table Rendering Engine**:
+- [x] **3.3 Table Rendering Engine**:
   - Calculate cell heights dynamically based on wrapped text contents.
   - Render cell background fills, grid line borders, and cell text alignment.
-- [ ] **3.4 Graphics & Image Renderer**:
+- [x] **3.4 Graphics & Image Renderer**:
   - Draw scaled images onto `XGraphics` context (`gfx.DrawImage`).
 
 ---

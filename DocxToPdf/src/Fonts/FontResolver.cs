@@ -120,9 +120,7 @@ namespace DocxToPdf.Fonts {
 
 			if (FaceToPathMap.TryGetValue(faceName, out string? filePath) && File.Exists(filePath)) {
 				try {
-					byte[] bytes = File.ReadAllBytes(filePath);
-					FontDataCache[faceName] = bytes;
-					return bytes;
+					return FontDataCache.GetOrAdd(faceName, key => File.ReadAllBytes(filePath));
 				} catch {
 					// Read failure fallback
 				}

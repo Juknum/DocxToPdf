@@ -4,6 +4,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocxToPdf.Fonts;
 using DocxToPdf.Model;
 using DocxToPdf.Parsing;
+using DocxToPdf.Rendering;
 using PdfSharp.Pdf;
 
 namespace DocxToPdf {
@@ -39,13 +40,11 @@ namespace DocxToPdf {
 			using WordprocessingDocument wordDoc = WordprocessingDocument.Open(wordFilePath, false);
 			DocumentModel docModel = DocxParser.Parse(wordDoc);
 
-			using PdfDocument pdfDoc = new PdfDocument();
-
-			// Initial stub PDF page generation until layout engine (Phase 3) is implemented
-			PdfPage page = pdfDoc.AddPage();
+			using PdfDocument pdfDoc = PdfRenderer.Render(docModel);
+			int pageCount = pdfDoc.PageCount;
 			pdfDoc.Save(outputPdfFilePath);
 
-			Console.WriteLine($"Successfully parsed document ({docModel.Sections.Count} section(s)). Generated stub PDF output at '{outputPdfFilePath}'.");
+			Console.WriteLine($"Successfully parsed and converted document ({docModel.Sections.Count} section(s), {pageCount} page(s)) to '{outputPdfFilePath}'.");
 		}
 	}
 }
