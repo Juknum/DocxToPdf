@@ -1,4 +1,5 @@
 <Solution>
 	<Project Path="DocxToPdf/DocxToPdf.csproj" />
 	<Project Path="ConsoleApp/ConsoleApp.csproj" />
+	<Project Path="DocxToPdf.Tests/DocxToPdf.Tests.csproj" />
 </Solution>
