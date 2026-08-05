@@ -43,15 +43,52 @@ namespace DocxToPdf.Parsing {
 					ParseRun(r, pPr, paragraphStyleId, pModel, mediaResolver);
 				} else if (child is SimpleField simpleField) {
 					ParseSimpleField(simpleField, pPr, paragraphStyleId, pModel);
-				} else if (child is Drawing drawing) {
-					DrawingModel? drawingModel = mediaResolver.ExtractDrawing(drawing);
-					if (drawingModel != null) {
-						// Embed drawing representation into runs or paragraph structure if needed
-					}
 				}
 			}
 
 			return pModel;
+		}
+
+		public List<IBlockElement> ParseParagraphToElements(Paragraph p, MediaResolver mediaResolver, TableParser? tableParser = null) {
+			List<IBlockElement> elements = new List<IBlockElement>();
+
+			// Extract drawings and pictures embedded in paragraph
+			List<DrawingModel> drawings = ExtractAllDrawings(p, mediaResolver);
+			elements.AddRange(drawings);
+
+			// Parse paragraph text and formatting
+			ParagraphModel pModel = ParseParagraph(p, mediaResolver);
+			if (pModel.Runs.Count > 0 || pModel.ListFormat != null || elements.Count == 0) {
+				elements.Add(pModel);
+			}
+
+			return elements;
+		}
+
+
+		private List<DrawingModel> ExtractAllDrawings(OpenXmlElement container, MediaResolver mediaResolver) {
+			List<DrawingModel> drawings = new List<DrawingModel>();
+			HashSet<string> seenRelIds = new HashSet<string>();
+
+			foreach (Drawing drawing in container.Descendants<Drawing>()) {
+				DrawingModel? model = mediaResolver.ExtractDrawing(drawing);
+				if (model != null && !string.IsNullOrEmpty(model.RelationshipId)) {
+					if (seenRelIds.Add(model.RelationshipId)) {
+						drawings.Add(model);
+					}
+				}
+			}
+
+			foreach (Picture pict in container.Descendants<Picture>()) {
+				DrawingModel? model = mediaResolver.ExtractPict(pict);
+				if (model != null && !string.IsNullOrEmpty(model.RelationshipId)) {
+					if (seenRelIds.Add(model.RelationshipId)) {
+						drawings.Add(model);
+					}
+				}
+			}
+
+			return drawings;
 		}
 
 		private void ParseRun(Run r, ParagraphProperties? pPr, string? paragraphStyleId, ParagraphModel pModel, MediaResolver mediaResolver) {
@@ -78,11 +115,6 @@ namespace DocxToPdf.Parsing {
 				} else if (child is Break br) {
 					RunModel runModel = CreateRunModel("\n", resolvedRStyle);
 					pModel.Runs.Add(runModel);
-				} else if (child is Drawing drawing) {
-					DrawingModel? drawingModel = mediaResolver.ExtractDrawing(drawing);
-					if (drawingModel != null) {
-						// Inline drawing inside run
-					}
 				}
 			}
 		}

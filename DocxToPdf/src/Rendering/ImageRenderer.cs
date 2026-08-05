@@ -38,25 +38,34 @@ namespace DocxToPdf.Rendering {
 			}
 
 			var (width, height) = MeasureDrawing(drawing, containerWidth);
+			if (width <= 0) width = 100;
+			if (height <= 0) height = 100;
 
+			double x = containerX + drawing.OffsetXPt;
+			double y = (drawing.Placement == DrawingPlacement.Floating) ? (currentY + drawing.OffsetYPt) : currentY;
+
+			bool rendered = false;
 			try {
 				using MemoryStream ms = new MemoryStream(drawing.ImageData);
 				using XImage img = XImage.FromStream(ms);
-
-				double x = containerX + drawing.OffsetXPt;
-				double y = (drawing.Placement == DrawingPlacement.Floating) ? (currentY + drawing.OffsetYPt) : currentY;
-
 				gfx.DrawImage(img, x, y, width, height);
-
-				if (drawing.Placement == DrawingPlacement.Inline) {
-					currentY += height + 6.0; // 6pt bottom spacing for inline image
-					return height + 6.0;
-				}
+				rendered = true;
 			} catch (Exception ex) {
-				Console.WriteLine($"[ImageRenderer] Failed to render image: {ex.Message}");
+				Console.WriteLine($"[ImageRenderer] Failed to render image: {ex.Message}. Using vector box fallback.");
+				// Render graceful fallback bounding box for unsupported format (e.g. EMF/WMF)
+				XPen borderPen = new XPen(XColor.FromArgb(200, 200, 200), 1);
+				XSolidBrush bgBrush = new XSolidBrush(XColor.FromArgb(248, 249, 250));
+				gfx.DrawRectangle(borderPen, bgBrush, x, y, width, height);
+				rendered = true;
+			}
+
+			if (drawing.Placement == DrawingPlacement.Inline && rendered) {
+				currentY += height + 6.0;
+				return height + 6.0;
 			}
 
 			return 0;
 		}
+
 	}
 }

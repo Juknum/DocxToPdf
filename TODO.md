@@ -58,8 +58,8 @@ This document tracks the phased implementation plan for replacing `FreeSpire.Doc
 ---
 
 ### Phase 4: Refactoring `Converter.cs` & Verification
-- [ ] **4.1 Remove Evaluation Page Splitting Hack**:
+- [x] **4.1 Remove Evaluation Page Splitting Hack**:
   - Delete `MAX_PAGES_PER_PART_ALLOWED = 3` and temporary file merging logic required by FreeSpire.Doc.
-- [ ] **4.2 End-to-End Visual Verification**:
+- [x] **4.2 End-to-End Visual Verification**:
   - Test simple text documents, multi-page documents, tables, lists, and image layouts.
   - Compare generated PDFs with Word native PDF output for pixel accuracy.

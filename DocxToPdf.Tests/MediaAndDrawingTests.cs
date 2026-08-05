@@ -164,5 +164,62 @@ namespace DocxToPdf.Tests {
 				}
 			}
 		}
+
+		[Fact]
+		public void TestParagraphDrawingAndTextBoxExtraction() {
+			using (MemoryStream ms = new MemoryStream()) {
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(ms, WordprocessingDocumentType.Document)) {
+					MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+					ImagePart imgPart = mainPart.AddImagePart(ImagePartType.Png, "rIdImgBox");
+					byte[] dummyImageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+					using (Stream stream = imgPart.GetStream(FileMode.Create)) {
+						stream.Write(dummyImageBytes, 0, dummyImageBytes.Length);
+					}
+
+					var textBoxContent = new TextBoxContent(
+						new Paragraph(new Run(new Text("Inside TextBox")))
+					);
+
+					var drawing = new Drawing(
+						new Wp.Inline(
+							new Wp.Extent { Cx = 914400, Cy = 914400 },
+							new A.Graphic(
+								new A.GraphicData(
+									new A.Blip { Embed = "rIdImgBox" }
+								) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }
+							)
+						)
+					);
+
+					var paragraph = new Paragraph(
+						new Run(drawing),
+						new Run(new Text("Outside TextBox"))
+					);
+					// Add textBoxContent as child element
+					paragraph.AppendChild(textBoxContent);
+
+					mainPart.Document = new Document(new Body(paragraph));
+					wordDoc.Save();
+				}
+
+				ms.Position = 0;
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(ms, false)) {
+					MediaResolver resolver = new MediaResolver(wordDoc.MainDocumentPart!);
+					var p = wordDoc.MainDocumentPart!.Document.Body!.Elements<Paragraph>().First();
+					var drg = p.Descendants<Drawing>().FirstOrDefault();
+					Assert.NotNull(drg);
+					var drgModel = resolver.ExtractDrawing(drg!);
+					Assert.NotNull(drgModel);
+
+					DocumentModel model = DocxParser.Parse(wordDoc);
+					Assert.Single(model.Sections);
+					var elements = model.Sections[0].Elements;
+
+					Assert.True(elements.Count >= 2);
+					Assert.Contains(elements, e => e is DrawingModel);
+					Assert.Contains(elements, e => e is ParagraphModel pm && pm.Runs.Any(r => r.Text.Contains("Outside TextBox")));
+				}
+			}
+		}
 	}
 }

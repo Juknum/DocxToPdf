@@ -31,8 +31,8 @@ namespace DocxToPdf.Parsing {
 
 			foreach (var element in body.ChildElements) {
 				if (element is Paragraph p) {
-					ParagraphModel pModel = paragraphParser.ParseParagraph(p, mainMediaResolver);
-					currentSection.Elements.Add(pModel);
+					var pElements = paragraphParser.ParseParagraphToElements(p, mainMediaResolver, tableParser);
+					currentSection.Elements.AddRange(pElements);
 
 					// Check if paragraph contains a SectionProperties break (w:pPr/w:sectPr)
 					SectionProperties? pSectPr = p.ParagraphProperties?.SectionProperties;

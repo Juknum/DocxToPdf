@@ -40,15 +40,34 @@ namespace DocxToPdf.Parsing {
 					cy = anchor.Extent.Cy?.Value ?? 0;
 				}
 				relationshipId = FindBlipRelationshipId(anchor);
+			} else {
+				relationshipId = FindBlipRelationshipId(drawing);
 			}
 
 			if (string.IsNullOrEmpty(relationshipId)) {
 				return null;
 			}
 
+			return ExtractImageByRelationshipId(relationshipId!, placement, cx, cy);
+		}
+
+		public DrawingModel? ExtractPict(Picture pict) {
+			if (pict == null) return null;
+
+			string? relationshipId = FindBlipRelationshipId(pict);
+			if (string.IsNullOrEmpty(relationshipId)) {
+				return null;
+			}
+
+			return ExtractImageByRelationshipId(relationshipId!, DrawingPlacement.Inline, 0, 0);
+		}
+
+		public DrawingModel? ExtractImageByRelationshipId(string relationshipId, DrawingPlacement placement, long cx, long cy) {
+			if (string.IsNullOrEmpty(relationshipId)) return null;
+
 			ImagePart? imagePart = null;
 			try {
-				imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
+				imagePart = _partContainer.GetPartById(relationshipId) as ImagePart;
 			} catch {
 				return null;
 			}
@@ -65,7 +84,7 @@ namespace DocxToPdf.Parsing {
 			}
 
 			return new DrawingModel {
-				RelationshipId = relationshipId!,
+				RelationshipId = relationshipId,
 				ImageData = imageData,
 				ContentType = imagePart.ContentType ?? "image/png",
 				WidthPt = TwipConverter.EmusToPoints(cx),
@@ -75,15 +94,27 @@ namespace DocxToPdf.Parsing {
 		}
 
 		private string? FindBlipRelationshipId(OpenXmlElement element) {
-			A.Blip? blip = element.Descendants<A.Blip>().GetEnumerator().MoveNext() 
-				? element.Descendants<A.Blip>().GetEnumerator().Current 
-				: null;
-
 			foreach (var desc in element.Descendants<A.Blip>()) {
-				if (desc.Embed?.Value != null) {
+				if (desc.Embed?.Value != null && !string.IsNullOrEmpty(desc.Embed.Value)) {
 					return desc.Embed.Value;
 				}
 			}
+
+			foreach (var desc in element.Descendants()) {
+				foreach (var attr in desc.GetAttributes()) {
+					string? val = attr.Value;
+					if ((attr.LocalName == "embed" || attr.LocalName == "id") && val != null && val.StartsWith("rId")) {
+						return val;
+					}
+				}
+				foreach (var attr in desc.ExtendedAttributes) {
+					string? val = attr.Value;
+					if ((attr.LocalName == "embed" || attr.LocalName == "id") && val != null && val.StartsWith("rId")) {
+						return val;
+					}
+				}
+			}
+
 			return null;
 		}
 	}
