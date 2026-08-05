@@ -12,6 +12,8 @@
 *.env
 .dotnet_home/
 .tmp/
+coverage/
+code-coverage-results.md
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
