@@ -5,9 +5,9 @@ This document tracks the phased implementation plan for replacing `FreeSpire.Doc
 ---
 
 ### Phase 1: Dependency Cleanup & Setup
-- [ ] **1.1 Remove FreeSpire.Doc**: Remove `FreeSpire.Doc` NuGet dependency from `DocxToPdf.csproj`.
-- [ ] **1.2 Add OpenXML SDK**: Install `DocumentFormat.OpenXml` (v3.0+).
-- [ ] **1.3 Configure Cross-Platform Font Resolver**: Implement `PdfSharp.Fonts.IFontResolver` in C# to load system TrueType/OpenType fonts (`Arial`, `Calibri`, `Times New Roman`, etc.) across macOS (`/System/Library/Fonts`), Linux (`/usr/share/fonts`), and Windows.
+- [x] **1.1 Remove FreeSpire.Doc**: Remove `FreeSpire.Doc` NuGet dependency from `DocxToPdf.csproj`.
+- [x] **1.2 Add OpenXML SDK**: Install `DocumentFormat.OpenXml` (v3.0+).
+- [x] **1.3 Configure Cross-Platform Font Resolver**: Implement `PdfSharp.Fonts.IFontResolver` in C# to load system TrueType/OpenType fonts (`Arial`, `Calibri`, `Times New Roman`, etc.) across macOS (`/System/Library/Fonts`), Linux (`/usr/share/fonts`), and Windows.
 
 ---
 
