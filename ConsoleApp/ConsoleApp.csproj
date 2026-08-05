@@ -11,4 +11,9 @@
 		<ProjectReference Include="..\DocxToPdf\DocxToPdf.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Docnet.Core" Version="2.6.0" />
+	  <PackageReference Include="SixLabors.ImageSharp" Version="2.1.8" />
+	</ItemGroup>
+
 </Project>
