@@ -53,7 +53,7 @@ namespace DocxToPdf.Parsing {
 				if (child is Paragraph p) {
 					targetList.Add(_paragraphParser.ParseParagraph(p, mediaResolver));
 				} else if (child is Table tbl) {
-					targetList.Add(_tableParser.ParseTable(tbl, mediaResolver));
+					targetList.Add(_tableParser.ParseTable(tbl, mediaResolver, _paragraphParser));
 				}
 			}
 		}

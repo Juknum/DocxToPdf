@@ -101,5 +101,44 @@ namespace DocxToPdf.Tests {
 				}
 			}
 		}
+
+		[Fact]
+		public void TestParseEmptyDocumentAndTrailingEmptySectionCleanup() {
+			using (MemoryStream ms = new MemoryStream()) {
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(ms, WordprocessingDocumentType.Document)) {
+					MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+					mainPart.Document = new Document(new Body(
+						new Paragraph(
+							new ParagraphProperties(new SectionProperties())
+						)
+					));
+					wordDoc.Save();
+				}
+
+				ms.Position = 0;
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(ms, false)) {
+					DocumentModel model = DocxParser.Parse(wordDoc);
+					// Trailing empty section created after paragraph section break should be cleaned up
+					Assert.Single(model.Sections);
+				}
+			}
+		}
+
+		[Fact]
+		public void TestParseNullBody() {
+			using (MemoryStream ms = new MemoryStream()) {
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(ms, WordprocessingDocumentType.Document)) {
+					MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+					mainPart.Document = new Document(); // No Body
+					wordDoc.Save();
+				}
+
+				ms.Position = 0;
+				using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(ms, false)) {
+					DocumentModel model = DocxParser.Parse(wordDoc);
+					Assert.Empty(model.Sections);
+				}
+			}
+		}
 	}
 }

@@ -5,8 +5,9 @@ namespace DocxToPdf.Tests {
 	public class TwipConverterTests {
 		[Fact]
 		public void TestTwipsToPoints() {
-			Assert.Equal(72.0, TwipConverter.TwipsToPoints(1440));
-			Assert.Equal(36.0, TwipConverter.TwipsToPoints(720));
+			Assert.Equal(72.0, TwipConverter.TwipsToPoints(1440.0));
+			Assert.Equal(72.0, TwipConverter.TwipsToPoints(1440L));
+			Assert.Equal(36.0, TwipConverter.TwipsToPoints(720.0));
 		}
 
 		[Fact]
@@ -33,6 +34,8 @@ namespace DocxToPdf.Tests {
 			Assert.Equal("#00FF00", TwipConverter.NormalizeHexColor("#00FF00"));
 			Assert.Equal("#000000", TwipConverter.NormalizeHexColor("auto"));
 			Assert.Equal("#000000", TwipConverter.NormalizeHexColor(null));
+			Assert.Equal("#112233", TwipConverter.NormalizeHexColor("FF112233")); // 8-char ARGB
+			Assert.Equal("#000000", TwipConverter.NormalizeHexColor("FFF")); // Invalid length fallback
 		}
 	}
 }

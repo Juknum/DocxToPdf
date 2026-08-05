@@ -46,7 +46,13 @@ namespace DocxToPdf.Parsing {
 				return null;
 			}
 
-			ImagePart? imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
+			ImagePart? imagePart = null;
+			try {
+				imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
+			} catch {
+				return null;
+			}
+
 			if (imagePart == null) {
 				return null;
 			}

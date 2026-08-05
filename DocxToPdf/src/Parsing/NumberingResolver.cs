@@ -48,9 +48,8 @@ namespace DocxToPdf.Parsing {
 			}
 
 			ListType listType = ListType.Bullet;
-			string numFmt = level.NumberingFormat?.Val?.HasValue == true
-				? level.NumberingFormat.Val.Value.ToString().ToLowerInvariant()
-				: "bullet";
+			string numFmt = level.NumberingFormat?.Val?.InnerText?.ToLowerInvariant() 
+				?? (level.NumberingFormat?.Val?.HasValue == true ? level.NumberingFormat.Val.Value.ToString().ToLowerInvariant() : "bullet");
 
 			if (numFmt != "bullet" && numFmt != "none") {
 				listType = ListType.Numbered;
@@ -128,20 +127,11 @@ namespace DocxToPdf.Parsing {
 		}
 
 		private string FormatNumber(string numFmt, int value) {
-			switch (numFmt) {
-				case "decimal":
-					return value.ToString();
-				case "upperroman":
-					return ToRoman(value).ToUpper();
-				case "lowerroman":
-					return ToRoman(value).ToLower();
-				case "upperletter":
-					return ToLetter(value).ToUpper();
-				case "lowerletter":
-					return ToLetter(value).ToLower();
-				default:
-					return value.ToString();
-			}
+			if (numFmt.Contains("lowerroman") || numFmt.Contains("lower_roman")) return ToRoman(value).ToLower();
+			if (numFmt.Contains("upperroman") || numFmt.Contains("upper_roman")) return ToRoman(value).ToUpper();
+			if (numFmt.Contains("lowerletter") || numFmt.Contains("lower_letter")) return ToLetter(value).ToLower();
+			if (numFmt.Contains("upperletter") || numFmt.Contains("upper_letter")) return ToLetter(value).ToUpper();
+			return value.ToString();
 		}
 
 		private string ToRoman(int number) {
