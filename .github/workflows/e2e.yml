@@ -1,0 +1,50 @@
+name: E2E Visual Verification
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e-verify:
+    name: E2E Verification (${{ matrix.os }}, ${{ matrix.framework }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        framework: [net8.0, net10.0]
+        include:
+          - os: windows-latest
+            framework: net48
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDKs
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run E2E Visual Verification Tests
+        run: dotnet test --configuration Release --no-build -f ${{ matrix.framework }} --filter "Category=E2E"
+
+      - name: Upload Diff & Page Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-diff-images-${{ matrix.os }}-${{ matrix.framework }}
+          path: |
+            DocxToPdf.Files/**/*.png
+            DocxToPdf.Files/**/output.pdf
+            DocxToPdf.Files/**/*e2e-scorecard.json
+            DocxToPdf.Files/**/*e2e-scorecard.md

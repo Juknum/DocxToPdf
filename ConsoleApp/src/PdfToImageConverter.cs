@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using Docnet.Core;
 using Docnet.Core.Models;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 
 namespace ConsoleApp {
 	public static class PdfToImageConverter {
 		/// <summary>
 		/// Converts all pages of a PDF document into high-resolution PNG images.
 		/// </summary>
-		public static List<string> ConvertPdfToImages(string pdfPath, string outputDir, string filePrefix = "page", int dpi = 150) {
+		public static List<string> ConvertPdfToImages(string pdfPath, string outputDir, string filePrefix = "page", int dpi = 150, double scale = 0.5) {
 			if (!File.Exists(pdfPath)) {
 				throw new FileNotFoundException($"PDF file not found: '{pdfPath}'");
 			}
@@ -21,7 +21,7 @@ namespace ConsoleApp {
 			}
 
 			List<string> generatedImages = new();
-			double dimFactor = dpi / 72.0;
+			double dimFactor = (dpi * scale) / 72.0;
 
 			using (var docReader = DocLib.Instance.GetDocReader(pdfPath, new PageDimensions(dimFactor))) {
 				int pageCount = docReader.GetPageCount();
@@ -33,9 +33,16 @@ namespace ConsoleApp {
 					int height = pageReader.GetPageHeight();
 					byte[] rawBytes = pageReader.GetImage();
 
-					using var image = Image.LoadPixelData<Bgra32>(rawBytes, width, height);
+					var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+					using var bitmap = new SKBitmap(info);
+					Marshal.Copy(rawBytes, 0, bitmap.GetPixels(), rawBytes.Length);
+
 					string outPath = Path.Combine(outputDir, $"{filePrefix}_page_{i + 1}.png");
-					image.Save(outPath);
+					using var image = SKImage.FromBitmap(bitmap);
+					using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+					using var stream = File.Create(outPath);
+					data.SaveTo(stream);
+
 					generatedImages.Add(outPath);
 					Console.WriteLine($"Saved page {i + 1}/{pageCount} -> '{outPath}' ({width}x{height} px)");
 				}
@@ -56,6 +63,108 @@ namespace ConsoleApp {
 			var actualImages = ConvertPdfToImages(actualPdf, outputDir, "actual", dpi);
 
 			Console.WriteLine($"Done! {expectedImages.Count} expected page image(s) and {actualImages.Count} actual page image(s) created in '{outputDir}'.");
+		}
+
+		/// <summary>
+		/// Verifies each sample directory in DocxToPdf.Files by converting input.docx to output.pdf
+		/// and comparing extracted page images against expected.pdf using a 90% threshold.
+		/// </summary>
+		public static bool VerifyDocxToPdfFiles(string baseDir = "DocxToPdf.Files", double thresholdPercent = 90.0) {
+			if (!Directory.Exists(baseDir)) {
+				Console.WriteLine($"Base directory '{baseDir}' not found.");
+				return false;
+			}
+
+			string[] sampleDirs = Directory.GetDirectories(baseDir);
+			bool allPassed = true;
+
+			foreach (string sampleDir in sampleDirs) {
+				string folderName = Path.GetFileName(sampleDir);
+				if (folderName.Equals("comparison_images", StringComparison.OrdinalIgnoreCase) ||
+				    folderName.Equals("pdf_images", StringComparison.OrdinalIgnoreCase)) {
+					continue;
+				}
+
+				string inputDocx = Path.Combine(sampleDir, "input.docx");
+				string expectedPdf = Path.Combine(sampleDir, "expected.pdf");
+				string outputPdf = Path.Combine(sampleDir, "output.pdf");
+
+				if (!File.Exists(inputDocx) || !File.Exists(expectedPdf)) {
+					continue;
+				}
+
+				Console.WriteLine($"\n--- Verifying E2E Sample: {folderName} ---");
+				DocxToPdf.Converter.Convert(inputDocx, outputPdf);
+
+				var expectedImgs = ConvertPdfToImages(expectedPdf, sampleDir, "expected");
+				var outputImgs = ConvertPdfToImages(outputPdf, sampleDir, "output");
+
+				if (expectedImgs.Count != outputImgs.Count) {
+					Console.WriteLine($"❌ Page count mismatch for {folderName}: expected {expectedImgs.Count}, got {outputImgs.Count}");
+					allPassed = false;
+					continue;
+				}
+
+				for (int i = 0; i < expectedImgs.Count; i++) {
+					using var img1 = SKBitmap.Decode(expectedImgs[i]);
+					using var img2 = SKBitmap.Decode(outputImgs[i]);
+
+					double similarity = CompareImages(img1, img2);
+					double pct = similarity * 100.0;
+
+					if (pct >= thresholdPercent) {
+						Console.WriteLine($"✅ [{folderName}] Page {i + 1}: {pct:F2}% match (>= {thresholdPercent:F1}%)");
+					} else {
+						Console.WriteLine($"❌ [{folderName}] Page {i + 1}: {pct:F2}% match (< {thresholdPercent:F1}% threshold)");
+						allPassed = false;
+					}
+				}
+			}
+
+			return allPassed;
+		}
+
+		public static double CompareImages(SKBitmap img1, SKBitmap img2, byte colorTolerance = 30) {
+			int minWidth = Math.Min(img1.Width, img2.Width);
+			int minHeight = Math.Min(img1.Height, img2.Height);
+			int maxWidth = Math.Max(img1.Width, img2.Width);
+			int maxHeight = Math.Max(img1.Height, img2.Height);
+			int totalPixels = maxWidth * maxHeight;
+
+			if (totalPixels == 0) return 1.0;
+
+			long matchingPixels = 0;
+
+			for (int y = 0; y < maxHeight; y++) {
+				for (int x = 0; x < minWidth; x++) {
+					if (y < minHeight) {
+						SKColor p1 = img1.GetPixel(x, y);
+						SKColor p2 = img2.GetPixel(x, y);
+
+						var (r1, g1, b1) = ToCompositeRgb(p1);
+						var (r2, g2, b2) = ToCompositeRgb(p2);
+
+						int rDiff = Math.Abs(r1 - r2);
+						int gDiff = Math.Abs(g1 - g2);
+						int bDiff = Math.Abs(b1 - b2);
+
+						if (rDiff <= colorTolerance && gDiff <= colorTolerance && bDiff <= colorTolerance) {
+							matchingPixels++;
+						}
+					}
+				}
+			}
+
+			return (double)matchingPixels / totalPixels;
+		}
+
+		private static (byte R, byte G, byte B) ToCompositeRgb(SKColor p) {
+			if (p.Alpha == 0) return (255, 255, 255);
+			int a = p.Alpha;
+			byte r = (byte)((p.Red * a + 255 * (255 - a)) / 255);
+			byte g = (byte)((p.Green * a + 255 * (255 - a)) / 255);
+			byte b = (byte)((p.Blue * a + 255 * (255 - a)) / 255);
+			return (r, g, b);
 		}
 	}
 }

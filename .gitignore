@@ -19,6 +19,12 @@ pdf_images/
 DocxToPdf.Files/comparison_images/
 DocxToPdf.Files/pdf_images/
 
+# E2E Test generated files
+DocxToPdf.Files/**/output.pdf
+DocxToPdf.Files/**/*.png
+DocxToPdf.Files/**/*.json
+DocxToPdf.Files/**/*.md
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -436,3 +442,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /Library
+
+.DS_Store

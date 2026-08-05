@@ -61,5 +61,5 @@ This document tracks the phased implementation plan for replacing `FreeSpire.Doc
 - [x] **4.1 Remove Evaluation Page Splitting Hack**:
   - Delete `MAX_PAGES_PER_PART_ALLOWED = 3` and temporary file merging logic required by FreeSpire.Doc.
 - [x] **4.2 End-to-End Visual Verification**:
-  - Test simple text documents, multi-page documents, tables, lists, and image layouts.
-  - Compare generated PDFs with Word native PDF output for pixel accuracy.
+  - Built E2E test suite (`E2EWorkflowTests.cs`), CLI verification runner (`ConsoleApp verify`), and GitHub Actions workflow (`.github/workflows/e2e.yml`).
+  - Standardized `DocxToPdf.Files/<FileName>/` structure (`input.docx`, `expected.pdf`, `output.pdf` gitignored, `*.png` gitignored) with 90%+ image matching threshold.

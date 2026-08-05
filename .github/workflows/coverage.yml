@@ -34,8 +34,8 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Release --no-restore
 
-      - name: Run Tests with Code Coverage
-        run: dotnet test --configuration Release --no-build -f ${{ matrix.framework }} --collect:"XPlat Code Coverage" --results-directory ./coverage
+      - name: Run Unit Tests with Code Coverage
+        run: dotnet test --configuration Release --no-build -f ${{ matrix.framework }} --filter "Category!=E2E" --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Generate Coverage Summary Report
         if: matrix.os == 'ubuntu-latest' && matrix.framework == 'net10.0'

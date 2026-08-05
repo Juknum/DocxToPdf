@@ -117,6 +117,7 @@ namespace DocxToPdf.Rendering {
 			}
 
 			gfx = XGraphics.FromPdfPage(page);
+			gfx.DrawRectangle(XBrushes.White, 0, 0, page.Width, page.Height);
 
 			return new PageContext {
 				Page = page,

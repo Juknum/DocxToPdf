@@ -1,24 +1,23 @@
 # DocxToPdf
 
-A .NET tool and library to convert Word `.docx` documents to `.pdf` files, supporting multi-page splitting and merging using **FreeSpire.Doc** and **PDFsharp**.
+A cross-platform .NET library and CLI tool to convert Word `.docx` documents to high-fidelity `.pdf` files using **DocumentFormat.OpenXml** and **PDFsharp**.
 
 ## Features
 
-- **DOCX to PDF Conversion**: Convert `.docx` files to PDF.
-- **Large Document Support**: Automatically splits documents with more than 3 pages into smaller temporary parts during conversion and merges them into a single output PDF.
-- **Cross-Platform & Multi-Targeted**: Compatible across macOS, Linux, and Windows, supporting:
-	- **.NET Standard 2.0** (compatible with .NET Core 2.0+, .NET 5/6/7/8/9/10, .NET Framework 4.6.1+, Mono, Unity, Xamarin)
-	- **.NET 8.0 (LTS)**
-	- **.NET 10.0**
-
-## Prerequisites
-
-- [.NET SDK](https://dotnet.microsoft.com/download) (.NET 8.0 LTS or later recommended).
+- **DOCX to PDF Conversion**: Native OpenXML parsing and layout rendering for `.docx` documents.
+- **Cross-Platform**: Operates seamlessly across macOS, Linux, and Windows with custom cross-platform font resolution.
+- **End-to-End Visual Verification**: Built-in test suite and GitHub Actions workflow comparing page images at 90%+ pixel similarity.
+- **Multi-Targeted**: Supports `.NET Standard 2.0`, `.NET 8.0 (LTS)`, and `.NET 10.0`.
 
 ## Project Structure
 
-- `DocxToPdf/`: Core class library containing `Converter.cs`.
-- `ConsoleApp/`: CLI application for converting files.
+- `DocxToPdf/`: Core conversion engine library (`Converter.cs`).
+- `DocxToPdf.Tests/`: Unit tests and `E2EWorkflowTests.cs` for automated visual page comparison.
+- `DocxToPdf.Files/`: E2E sample datasets following the standard test architecture:
+  - `<FileName>/input.docx`: Input Word document.
+  - `<FileName>/expected.pdf`: Ground-truth expected PDF.
+  - `<FileName>/output.pdf`: Generated test output PDF (gitignored).
+- `ConsoleApp/`: CLI application for manual conversion and E2E verification.
 
 ## How to Build
 
@@ -32,21 +31,29 @@ dotnet build
 
 ### Command Line Interface (CLI)
 
-You can convert a `.docx` file by running the `ConsoleApp` project:
+Convert a `.docx` file using `ConsoleApp`:
 
 ```bash
-dotnet run --project ConsoleApp/ConsoleApp.csproj -- input.docx output.pdf
+dotnet run --project ConsoleApp -- input.docx output.pdf
 ```
 
-If the output path is omitted, it defaults to `output.pdf`:
+Run E2E visual verification on all samples in `DocxToPdf.Files`:
 
 ```bash
-dotnet run --project ConsoleApp/ConsoleApp.csproj -- document.docx
+dotnet run --project ConsoleApp -f net10.0 -- verify
+```
+
+### Running E2E Test Verification Suite
+
+Run all tests including E2E visual page comparison:
+
+```bash
+dotnet test
 ```
 
 ### Library Usage in C#
 
-You can also use the `DocxToPdf.Converter` in your own C# code:
+Use `DocxToPdf.Converter` in your C# projects:
 
 ```csharp
 using DocxToPdf;
@@ -55,9 +62,12 @@ using DocxToPdf;
 Converter.Convert("path/to/document.docx", "path/to/output.pdf");
 ```
 
-## How It Works
+## E2E Architecture & Git Rules
 
-1. Loads the `.docx` document using `Spire.Doc.Document`.
-2. Checks the page count of the document:
-	 - If **3 pages or fewer**: Directly saves the document as a PDF.
-	 - If **more than 3 pages**: Splits the document into 3-page chunks, converts each chunk to a temporary PDF, and merges them using `PdfSharp`.
+All test samples under `DocxToPdf.Files/<FileName>/` adhere to:
+- `input.docx` (tracked)
+- `expected.pdf` (tracked)
+- `output.pdf` (gitignored)
+- Extracted and diff page images `*.png` (gitignored)
+
+Images are compared page-by-page against a **90% pixel match threshold**.
