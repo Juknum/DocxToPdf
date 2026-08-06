@@ -176,6 +176,36 @@ namespace DocxToPdf.Tests {
 			}
 			Assert.True(foundEmf);
 		}
+
+		[Fact]
+		public void TestCalculateXPositioning() {
+			var model = new DocxToPdf.Model.DrawingModel {
+				Placement = DocxToPdf.Model.DrawingPlacement.Floating,
+				HorizontalRelativeFrom = "margin",
+				OffsetXPt = 15.0
+			};
+			double xMargin = DocxToPdf.Rendering.ImageRenderer.CalculateX(model, 72.0, 468.0, 100.0);
+			Assert.Equal(87.0, xMargin);
+
+			model.AlignH = "center";
+			double xCenter = DocxToPdf.Rendering.ImageRenderer.CalculateX(model, 72.0, 468.0, 100.0);
+			Assert.Equal(256.0, xCenter); // 72 + (468 - 100) / 2
+		}
+
+		[Fact]
+		public void TestCalculateYPositioning() {
+			var model = new DocxToPdf.Model.DrawingModel {
+				Placement = DocxToPdf.Model.DrawingPlacement.Floating,
+				VerticalRelativeFrom = "topmargin",
+				OffsetYPt = 25.0
+			};
+			double yMargin = DocxToPdf.Rendering.ImageRenderer.CalculateY(model, 150.0, 50.0);
+			Assert.Equal(97.0, yMargin); // 72 + 25
+
+			model.VerticalRelativeFrom = "paragraph";
+			double yParagraph = DocxToPdf.Rendering.ImageRenderer.CalculateY(model, 150.0, 50.0);
+			Assert.Equal(175.0, yParagraph); // 150 + 25
+		}
 	}
 }
 

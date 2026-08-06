@@ -30,6 +30,8 @@ namespace DocxToPdf.Parsing {
 
 			string? relHStr = null;
 			string? relVStr = null;
+			string? alignH = null;
+			string? alignV = null;
 
 			if (inline != null) {
 				placement = DrawingPlacement.Inline;
@@ -51,20 +53,32 @@ namespace DocxToPdf.Parsing {
 				behindDoc = anchor.BehindDoc?.Value == true;
 
 				Wp.HorizontalPosition? posH = anchor.GetFirstChild<Wp.HorizontalPosition>();
-				if (posH != null && posH.RelativeFrom != null) {
-					relHStr = posH.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+				if (posH != null) {
+					if (posH.RelativeFrom != null) {
+						relHStr = posH.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+					}
 					Wp.PositionOffset? offsetH = posH.GetFirstChild<Wp.PositionOffset>();
 					if (offsetH != null && long.TryParse(offsetH.Text, out long hVal)) {
 						offsetXEmu = hVal;
 					}
+					Wp.HorizontalAlignment? alignmentH = posH.GetFirstChild<Wp.HorizontalAlignment>();
+					if (alignmentH != null) {
+						alignH = alignmentH.Text?.ToLowerInvariant();
+					}
 				}
 
 				Wp.VerticalPosition? posV = anchor.GetFirstChild<Wp.VerticalPosition>();
-				if (posV != null && posV.RelativeFrom != null) {
-					relVStr = posV.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+				if (posV != null) {
+					if (posV.RelativeFrom != null) {
+						relVStr = posV.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+					}
 					Wp.PositionOffset? offsetV = posV.GetFirstChild<Wp.PositionOffset>();
 					if (offsetV != null && long.TryParse(offsetV.Text, out long vVal)) {
 						offsetYEmu = vVal;
+					}
+					Wp.VerticalAlignment? alignmentV = posV.GetFirstChild<Wp.VerticalAlignment>();
+					if (alignmentV != null) {
+						alignV = alignmentV.Text?.ToLowerInvariant();
 					}
 				}
 			}
@@ -103,6 +117,8 @@ namespace DocxToPdf.Parsing {
 					Placement = placement,
 					OffsetXPt = TwipConverter.EmusToPoints(offsetXEmu),
 					OffsetYPt = TwipConverter.EmusToPoints(offsetYEmu),
+					AlignH = alignH,
+					AlignV = alignV,
 					BehindDoc = behindDoc,
 					HorizontalRelativeFrom = relHStr,
 					VerticalRelativeFrom = relVStr,
