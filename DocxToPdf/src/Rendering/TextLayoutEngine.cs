@@ -219,7 +219,7 @@ namespace DocxToPdf.Rendering {
 				}
 				return paragraph.LineHeightPt;
 			}
-			return baseFontHeight * 1.15; // Standard Word line spacing ~1.15x
+			return baseFontHeight * 1.15; // Standard Word default line spacing 115%
 		}
 
 		public static void RenderParagraph(ParagraphLayout layout, XGraphics gfx, double containerX, ref double currentY) {
@@ -263,7 +263,7 @@ namespace DocxToPdf.Rendering {
 					double drawY = currentY + (line.LineHeight - fragment.Height) / 2.0 + fragment.Height * 0.8;
 
 					// Background shading
-					if (fragment.BackgroundColor.HasValue && fragment.BackgroundColor.Value != XColors.Transparent) {
+					if (fragment.BackgroundColor.HasValue && fragment.BackgroundColor.Value != XColors.Transparent && fragment.BackgroundColor.Value != XColors.White) {
 						XSolidBrush bgBrush = new XSolidBrush(fragment.BackgroundColor.Value);
 						gfx.DrawRectangle(bgBrush, curX, currentY + (line.LineHeight - fragment.Height) / 2.0, fragment.Width + justifySpacing, fragment.Height);
 					}

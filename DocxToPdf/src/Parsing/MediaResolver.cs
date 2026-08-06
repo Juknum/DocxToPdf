@@ -23,8 +23,13 @@ namespace DocxToPdf.Parsing {
 
 			long cx = 0;
 			long cy = 0;
+			long offsetXEmu = 0;
+			long offsetYEmu = 0;
+			bool behindDoc = false;
 			DrawingPlacement placement = DrawingPlacement.Inline;
-			string? relationshipId = null;
+
+			string? relHStr = null;
+			string? relVStr = null;
 
 			if (inline != null) {
 				placement = DrawingPlacement.Inline;
@@ -32,23 +37,79 @@ namespace DocxToPdf.Parsing {
 					cx = inline.Extent.Cx?.Value ?? 0;
 					cy = inline.Extent.Cy?.Value ?? 0;
 				}
-				relationshipId = FindBlipRelationshipId(inline);
 			} else if (anchor != null) {
 				placement = DrawingPlacement.Floating;
 				if (anchor.Extent != null) {
 					cx = anchor.Extent.Cx?.Value ?? 0;
 					cy = anchor.Extent.Cy?.Value ?? 0;
 				}
-				relationshipId = FindBlipRelationshipId(anchor);
-			} else {
-				relationshipId = FindBlipRelationshipId(drawing);
+				var xfrmExt = drawing.Descendants<A.Extents>().FirstOrDefault();
+				if (xfrmExt != null && xfrmExt.Cx?.Value > 0 && xfrmExt.Cy?.Value > 0) {
+					cx = xfrmExt.Cx.Value;
+					cy = xfrmExt.Cy.Value;
+				}
+				behindDoc = anchor.BehindDoc?.Value == true;
+
+				Wp.HorizontalPosition? posH = anchor.GetFirstChild<Wp.HorizontalPosition>();
+				if (posH != null && posH.RelativeFrom != null) {
+					relHStr = posH.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+					Wp.PositionOffset? offsetH = posH.GetFirstChild<Wp.PositionOffset>();
+					if (offsetH != null && long.TryParse(offsetH.Text, out long hVal)) {
+						offsetXEmu = hVal;
+					}
+				}
+
+				Wp.VerticalPosition? posV = anchor.GetFirstChild<Wp.VerticalPosition>();
+				if (posV != null && posV.RelativeFrom != null) {
+					relVStr = posV.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+					Wp.PositionOffset? offsetV = posV.GetFirstChild<Wp.PositionOffset>();
+					if (offsetV != null && long.TryParse(offsetV.Text, out long vVal)) {
+						offsetYEmu = vVal;
+					}
+				}
 			}
 
-			if (string.IsNullOrEmpty(relationshipId)) {
-				return null;
-			}
+				string? relationshipId = FindBlipRelationshipId(drawing);
+				byte[]? imageData = null;
+				string contentType = "image/png";
 
-			return ExtractImageByRelationshipId(relationshipId!, placement, cx, cy);
+				if (!string.IsNullOrEmpty(relationshipId)) {
+					try {
+						ImagePart? imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
+						if (imagePart != null) {
+							using Stream stream = imagePart.GetStream();
+							using MemoryStream ms = new MemoryStream();
+							stream.CopyTo(ms);
+							imageData = ms.ToArray();
+							contentType = imagePart.ContentType ?? "image/png";
+						}
+					} catch { }
+				}
+
+				string? fillColorHex = FindSolidFillColor(drawing);
+				string? borderColorHex = FindBorderColor(drawing);
+				bool hasTextbox = drawing.Descendants<Paragraph>().Any();
+
+				if ((imageData == null || imageData.Length == 0) && string.IsNullOrEmpty(fillColorHex) && string.IsNullOrEmpty(borderColorHex) && !hasTextbox) {
+					return null;
+				}
+
+				return new DrawingModel {
+					RelationshipId = relationshipId ?? string.Empty,
+					ImageData = imageData ?? System.Array.Empty<byte>(),
+					ContentType = contentType,
+					WidthPt = TwipConverter.EmusToPoints(cx),
+					HeightPt = TwipConverter.EmusToPoints(cy),
+					Placement = placement,
+					OffsetXPt = TwipConverter.EmusToPoints(offsetXEmu),
+					OffsetYPt = TwipConverter.EmusToPoints(offsetYEmu),
+					BehindDoc = behindDoc,
+					HorizontalRelativeFrom = relHStr,
+					VerticalRelativeFrom = relVStr,
+					FillColorHex = fillColorHex,
+					BorderColorHex = borderColorHex,
+					ZIndex = anchor?.RelativeHeight?.Value ?? 0
+				};
 		}
 
 		public DrawingModel? ExtractPict(Picture pict) {
@@ -91,6 +152,29 @@ namespace DocxToPdf.Parsing {
 				HeightPt = TwipConverter.EmusToPoints(cy),
 				Placement = placement
 			};
+		}
+
+		private string? FindSolidFillColor(OpenXmlElement container) {
+			if (container.Descendants<A.NoFill>().Any(n => !n.Ancestors().Any(a => a.LocalName == "ln" || a.LocalName == "outline"))) {
+				return null;
+			}
+			foreach (var srgbClr in container.Descendants<A.RgbColorModelHex>()) {
+				if (srgbClr.Ancestors().Any(a => a.LocalName == "ln" || a.LocalName == "outline")) continue;
+				if (!string.IsNullOrEmpty(srgbClr.Val?.Value)) {
+					return srgbClr.Val.Value;
+				}
+			}
+			return null;
+		}
+
+		private string? FindBorderColor(OpenXmlElement container) {
+			foreach (var outline in container.Descendants<A.Outline>()) {
+				var srgbClr = outline.Descendants<A.RgbColorModelHex>().FirstOrDefault();
+				if (!string.IsNullOrEmpty(srgbClr?.Val?.Value)) {
+					return srgbClr.Val.Value;
+				}
+			}
+			return null;
 		}
 
 		private string? FindBlipRelationshipId(OpenXmlElement element) {

@@ -37,12 +37,20 @@ namespace DocxToPdf.Parsing {
 				pModel.ListFormat = _numberingResolver.ResolveListFormat(pPr.NumberingProperties);
 			}
 
-			// Iterate over child elements (Runs, SimpleFields, Drawings)
+			// Iterate over child elements (Runs, SimpleFields, Drawings, Hyperlinks)
 			foreach (var child in p.ChildElements) {
 				if (child is Run r) {
 					ParseRun(r, pPr, paragraphStyleId, pModel, mediaResolver);
 				} else if (child is SimpleField simpleField) {
 					ParseSimpleField(simpleField, pPr, paragraphStyleId, pModel);
+				} else if (child is Hyperlink hyperlink) {
+					foreach (var run in hyperlink.Elements<Run>()) {
+						ParseRun(run, pPr, paragraphStyleId, pModel, mediaResolver, isHyperlink: true);
+					}
+				} else if (child is SdtRun sdtRun) {
+					foreach (var run in sdtRun.Descendants<Run>()) {
+						ParseRun(run, pPr, paragraphStyleId, pModel, mediaResolver);
+					}
 				}
 			}
 
@@ -58,9 +66,7 @@ namespace DocxToPdf.Parsing {
 
 			// Parse paragraph text and formatting
 			ParagraphModel pModel = ParseParagraph(p, mediaResolver);
-			if (pModel.Runs.Count > 0 || pModel.ListFormat != null || elements.Count == 0) {
-				elements.Add(pModel);
-			}
+			elements.Add(pModel);
 
 			return elements;
 		}
@@ -70,19 +76,39 @@ namespace DocxToPdf.Parsing {
 			List<DrawingModel> drawings = new List<DrawingModel>();
 			HashSet<string> seenRelIds = new HashSet<string>();
 
-			foreach (Drawing drawing in container.Descendants<Drawing>()) {
-				DrawingModel? model = mediaResolver.ExtractDrawing(drawing);
-				if (model != null && !string.IsNullOrEmpty(model.RelationshipId)) {
-					if (seenRelIds.Add(model.RelationshipId)) {
-						drawings.Add(model);
+			foreach (AlternateContent altContent in container.Descendants<AlternateContent>()) {
+				AlternateContentChoice? choice = altContent.GetFirstChild<AlternateContentChoice>();
+				if (choice != null) {
+					foreach (Drawing drw in choice.Descendants<Drawing>()) {
+						DrawingModel? model = mediaResolver.ExtractDrawing(drw);
+						if (model != null) {
+							ExtractTextboxParagraphs(drw, model, mediaResolver);
+							drawings.Add(model);
+							if (!string.IsNullOrEmpty(model.RelationshipId)) seenRelIds.Add(model.RelationshipId);
+						}
 					}
 				}
 			}
 
+			foreach (Drawing drawing in container.Descendants<Drawing>()) {
+				if (drawing.Ancestors<AlternateContent>().Any()) continue;
+				DrawingModel? model = mediaResolver.ExtractDrawing(drawing);
+				if (model != null) {
+					if (model.Placement == DrawingPlacement.Inline && !string.IsNullOrEmpty(model.RelationshipId) && seenRelIds.Contains(model.RelationshipId)) {
+						continue;
+					}
+					ExtractTextboxParagraphs(drawing, model, mediaResolver);
+					drawings.Add(model);
+					if (!string.IsNullOrEmpty(model.RelationshipId)) seenRelIds.Add(model.RelationshipId);
+				}
+			}
+
 			foreach (Picture pict in container.Descendants<Picture>()) {
+				if (pict.Ancestors<AlternateContent>().Any()) continue;
 				DrawingModel? model = mediaResolver.ExtractPict(pict);
-				if (model != null && !string.IsNullOrEmpty(model.RelationshipId)) {
-					if (seenRelIds.Add(model.RelationshipId)) {
+				if (model != null) {
+					if (string.IsNullOrEmpty(model.RelationshipId) || seenRelIds.Add(model.RelationshipId)) {
+						ExtractTextboxParagraphs(pict, model, mediaResolver);
 						drawings.Add(model);
 					}
 				}
@@ -91,11 +117,26 @@ namespace DocxToPdf.Parsing {
 			return drawings;
 		}
 
-		private void ParseRun(Run r, ParagraphProperties? pPr, string? paragraphStyleId, ParagraphModel pModel, MediaResolver mediaResolver) {
+		private void ExtractTextboxParagraphs(OpenXmlElement container, DrawingModel model, MediaResolver mediaResolver) {
+			foreach (Paragraph txbxP in container.Descendants<Paragraph>()) {
+				ParagraphModel txbxPModel = ParseParagraph(txbxP, mediaResolver);
+				if (txbxPModel.Runs.Count > 0) {
+					model.TextboxParagraphs.Add(txbxPModel);
+				}
+			}
+		}
+
+		private void ParseRun(Run r, ParagraphProperties? pPr, string? paragraphStyleId, ParagraphModel pModel, MediaResolver mediaResolver, bool isHyperlink = false) {
 			RunProperties? rPr = r.RunProperties;
 			string? runStyleId = rPr?.RunStyle?.Val?.Value;
 
 			ResolvedRunStyle resolvedRStyle = _styleResolver.ResolveRunStyle(rPr, runStyleId, pPr, paragraphStyleId);
+			if (isHyperlink || (runStyleId != null && runStyleId.Equals("Hyperlink", StringComparison.OrdinalIgnoreCase))) {
+				resolvedRStyle.IsUnderline = true;
+				if (string.IsNullOrEmpty(resolvedRStyle.TextColorHex) || resolvedRStyle.TextColorHex == "#000000" || resolvedRStyle.TextColorHex == "000000") {
+					resolvedRStyle.TextColorHex = "#0563C1";
+				}
+			}
 
 			// Check for text, field codes, or inline drawings in run
 			foreach (var child in r.ChildElements) {
@@ -113,8 +154,12 @@ namespace DocxToPdf.Parsing {
 					RunModel runModel = CreateRunModel("\t", resolvedRStyle);
 					pModel.Runs.Add(runModel);
 				} else if (child is Break br) {
-					RunModel runModel = CreateRunModel("\n", resolvedRStyle);
-					pModel.Runs.Add(runModel);
+					if (br.Type?.Value == BreakValues.Page) {
+						pModel.HasPageBreak = true;
+					} else {
+						RunModel runModel = CreateRunModel("\n", resolvedRStyle);
+						pModel.Runs.Add(runModel);
+					}
 				}
 			}
 		}

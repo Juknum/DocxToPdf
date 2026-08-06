@@ -30,29 +30,60 @@ namespace DocxToPdf.Rendering {
 			int globalPageCounter = 0;
 
 			foreach (var section in documentModel.Sections) {
+				double leftX = section.PageSetup.Margins.Left;
+				double printableWidth = section.PageSetup.PrintableWidth;
+
+				void RenderBackgroundDrawingsForPage(int pageIndex, XGraphics currentGfx) {
+					int pPage = 1;
+					var bgDrawings = new System.Collections.Generic.List<DrawingModel>();
+					foreach (var elem in section.Elements) {
+						if (elem is DrawingModel drw && drw.BehindDoc && drw.ImageData != null && drw.ImageData.Length > 0 && pPage == pageIndex) {
+							bgDrawings.Add(drw);
+						}
+						if (elem is ParagraphModel p && p.HasPageBreak) {
+							pPage++;
+						}
+					}
+					foreach (var drw in bgDrawings.OrderBy(d => (d.WidthPt > 500 && d.HeightPt > 300) ? 0 : d.ZIndex)) {
+						double dummyY = 0;
+						ImageRenderer.RenderDrawing(drw, currentGfx, leftX, ref dummyY, printableWidth);
+					}
+				}
+
 				globalPageCounter++;
 				PageContext pageCtx = CreateNewPage(pdf, section, globalPageCounter, out XGraphics gfx);
 				pageContexts.Add(pageCtx);
+				RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 
-				double leftX = section.PageSetup.Margins.Left;
 				double currentY = section.PageSetup.Margins.Top;
 				double maxY = section.PageSetup.Height - section.PageSetup.Margins.Bottom;
-				double printableWidth = section.PageSetup.PrintableWidth;
 
 				foreach (var element in section.Elements) {
+
 					if (element is ParagraphModel paragraph) {
 						var pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, globalPageCounter, 1);
 
+						bool wasPushedToNewPage = false;
 						// Page break check
 						if (currentY + pLayout.TotalHeight > maxY && currentY > section.PageSetup.Margins.Top + 5.0) {
 							globalPageCounter++;
 							pageCtx = CreateNewPage(pdf, section, globalPageCounter, out gfx);
 							pageContexts.Add(pageCtx);
+							RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 							currentY = section.PageSetup.Margins.Top;
 							pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, globalPageCounter, 1);
+							wasPushedToNewPage = true;
 						}
 
 						TextLayoutEngine.RenderParagraph(pLayout, gfx, leftX, ref currentY);
+
+						if (paragraph.HasPageBreak && !wasPushedToNewPage) {
+							globalPageCounter++;
+							pageCtx = CreateNewPage(pdf, section, globalPageCounter, out gfx);
+							pageContexts.Add(pageCtx);
+							RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
+							currentY = section.PageSetup.Margins.Top;
+						}
 
 					} else if (element is TableModel table) {
 						var rowLayouts = TableRenderer.MeasureTable(table, gfx, printableWidth, globalPageCounter, 1);
@@ -64,6 +95,7 @@ namespace DocxToPdf.Rendering {
 								globalPageCounter++;
 								pageCtx = CreateNewPage(pdf, section, globalPageCounter, out gfx);
 								pageContexts.Add(pageCtx);
+								RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 								currentY = section.PageSetup.Margins.Top;
 
 								// Repeat table header rows on new page if present
@@ -80,12 +112,20 @@ namespace DocxToPdf.Rendering {
 						}
 
 					} else if (element is DrawingModel drawing) {
+						if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
+							// Full page cover background photo
+							double dummyY = 0;
+							ImageRenderer.RenderDrawing(drawing, gfx, leftX, ref dummyY, printableWidth);
+							continue;
+						}
+
 						var (imgW, imgH) = ImageRenderer.MeasureDrawing(drawing, printableWidth);
 
 						if (drawing.Placement == DrawingPlacement.Inline && currentY + imgH > maxY && currentY > section.PageSetup.Margins.Top + 5.0) {
 							globalPageCounter++;
 							pageCtx = CreateNewPage(pdf, section, globalPageCounter, out gfx);
 							pageContexts.Add(pageCtx);
+							RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 							currentY = section.PageSetup.Margins.Top;
 						}
 
@@ -117,7 +157,7 @@ namespace DocxToPdf.Rendering {
 			}
 
 			gfx = XGraphics.FromPdfPage(page);
-			gfx.DrawRectangle(XBrushes.White, 0, 0, page.Width, page.Height);
+			gfx.DrawRectangle(XBrushes.White, 0, 0, page.Width.Point, page.Height.Point);
 
 			return new PageContext {
 				Page = page,
