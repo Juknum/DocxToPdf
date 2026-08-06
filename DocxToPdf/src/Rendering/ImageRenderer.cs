@@ -39,11 +39,7 @@ namespace DocxToPdf.Rendering {
 
 			double x = containerX + drawing.OffsetXPt;
 			if (drawing.Placement == DrawingPlacement.Floating) {
-				if (!string.IsNullOrEmpty(drawing.RelationshipId) && drawing.RelationshipId == "rId10") {
-					x = 415.0;
-					width = 147.2;
-					height = 61.4;
-				} else if (!string.IsNullOrEmpty(drawing.HorizontalRelativeFrom) &&
+				if (!string.IsNullOrEmpty(drawing.HorizontalRelativeFrom) &&
 					string.Equals(drawing.HorizontalRelativeFrom, "page", StringComparison.OrdinalIgnoreCase)) {
 					x = drawing.OffsetXPt;
 				} else if (drawing.BehindDoc && width >= 500) {
@@ -53,16 +49,8 @@ namespace DocxToPdf.Rendering {
 
 			double y = currentY;
 			if (drawing.Placement == DrawingPlacement.Floating) {
-				if (!string.IsNullOrEmpty(drawing.RelationshipId) && drawing.RelationshipId == "rId10") {
-					y = 750.0;
-				} else if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
+				if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
 					y = 0;
-				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("4F4E55", StringComparison.OrdinalIgnoreCase) && width >= 600) {
-					y = drawing.OffsetYPt > 100.0 ? 200.0 : 250.0;
-				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("C45911", StringComparison.OrdinalIgnoreCase)) {
-					y = 275.0;
-				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("D5DCE4", StringComparison.OrdinalIgnoreCase)) {
-					y = drawing.OffsetYPt > 100.0 ? 227.0 : 380.0;
 				} else if (!string.IsNullOrEmpty(drawing.VerticalRelativeFrom) &&
 					string.Equals(drawing.VerticalRelativeFrom, "page", StringComparison.OrdinalIgnoreCase)) {
 					y = drawing.OffsetYPt;
@@ -84,16 +72,6 @@ namespace DocxToPdf.Rendering {
 					Console.WriteLine($"[ImageRenderer] Failed to render native image (ContentType={drawing.ContentType}, Bytes={drawing.ImageData.Length}, Header={header}): {ex.Message}. Attempting EmfRasterizer...");
 
 					if (EmfRasterizer.RenderEmf(drawing.ImageData, gfx, x, y, width, height)) {
-						rendered = true;
-					} else {
-						// Secondary vector fallback for black header bar
-						XSolidBrush bgBrush = new XSolidBrush(XColors.Black);
-						double bannerY = 250.0;
-						double bannerH = 25.0;
-						gfx.DrawRectangle(bgBrush, 0, bannerY, containerWidth + 200, bannerH);
-						XFont font = TextMeasurer.CreateFont("Arial", 9.5, true, false);
-						XSolidBrush textBrush = new XSolidBrush(XColors.White);
-						gfx.DrawString("UNIVERSITÉ DE TECHNOLOGIE DE BELFORT-MONTBÉLIARD", font, textBrush, 25.0, bannerY + 17.0);
 						rendered = true;
 					}
 				}
