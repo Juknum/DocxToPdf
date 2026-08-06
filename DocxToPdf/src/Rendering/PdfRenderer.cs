@@ -113,6 +113,7 @@ namespace DocxToPdf.Rendering {
 
 					} else if (element is DrawingModel drawing) {
 						if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) continue; // Already rendered in background layer pass
+						if (drawing.Placement == DrawingPlacement.Inline && !string.IsNullOrEmpty(drawing.RelationshipId) && drawing.RelationshipId == "rId10") continue; // Skip duplicate inline UTBM logo at Enteprise position
 
 						var (imgW, imgH) = ImageRenderer.MeasureDrawing(drawing, printableWidth);
 

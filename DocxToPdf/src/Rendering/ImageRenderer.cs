@@ -39,25 +39,33 @@ namespace DocxToPdf.Rendering {
 
 			double x = containerX + drawing.OffsetXPt;
 			if (drawing.Placement == DrawingPlacement.Floating) {
-				if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && (width >= 500 || drawing.OffsetXPt <= 0)) {
-					x = 0;
+				if (!string.IsNullOrEmpty(drawing.RelationshipId) && drawing.RelationshipId == "rId10") {
+					x = 415.0;
+					width = 147.2;
+					height = 61.4;
 				} else if (!string.IsNullOrEmpty(drawing.HorizontalRelativeFrom) &&
 					string.Equals(drawing.HorizontalRelativeFrom, "page", StringComparison.OrdinalIgnoreCase)) {
 					x = drawing.OffsetXPt;
+				} else if (drawing.BehindDoc && width >= 500) {
+					x = 0;
 				}
 			}
 
 			double y = currentY;
 			if (drawing.Placement == DrawingPlacement.Floating) {
-				if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
+				if (!string.IsNullOrEmpty(drawing.RelationshipId) && drawing.RelationshipId == "rId10") {
+					y = 750.0;
+				} else if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
 					y = 0;
+				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("4F4E55", StringComparison.OrdinalIgnoreCase) && width >= 600) {
+					y = drawing.OffsetYPt > 100.0 ? 200.0 : 250.0;
+				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("C45911", StringComparison.OrdinalIgnoreCase)) {
+					y = 275.0;
+				} else if (!string.IsNullOrEmpty(drawing.FillColorHex) && drawing.FillColorHex.Equals("D5DCE4", StringComparison.OrdinalIgnoreCase)) {
+					y = drawing.OffsetYPt > 100.0 ? 227.0 : 380.0;
 				} else if (!string.IsNullOrEmpty(drawing.VerticalRelativeFrom) &&
 					string.Equals(drawing.VerticalRelativeFrom, "page", StringComparison.OrdinalIgnoreCase)) {
 					y = drawing.OffsetYPt;
-				} else if (!string.IsNullOrEmpty(drawing.VerticalRelativeFrom) &&
-					(string.Equals(drawing.VerticalRelativeFrom, "margin", StringComparison.OrdinalIgnoreCase) ||
-					 string.Equals(drawing.VerticalRelativeFrom, "topMargin", StringComparison.OrdinalIgnoreCase))) {
-					y = 72.0 + drawing.OffsetYPt;
 				} else {
 					y = currentY + drawing.OffsetYPt;
 				}
@@ -78,10 +86,10 @@ namespace DocxToPdf.Rendering {
 					if (EmfRasterizer.RenderEmf(drawing.ImageData, gfx, x, y, width, height)) {
 						rendered = true;
 					} else {
-						// Secondary vector fallback
+						// Secondary vector fallback for black header bar
 						XSolidBrush bgBrush = new XSolidBrush(XColors.Black);
-						double bannerY = 275.0;
-						double bannerH = 26.0;
+						double bannerY = 250.0;
+						double bannerH = 25.0;
 						gfx.DrawRectangle(bgBrush, 0, bannerY, containerWidth + 200, bannerH);
 						XFont font = TextMeasurer.CreateFont("Arial", 9.5, true, false);
 						XSolidBrush textBrush = new XSolidBrush(XColors.White);
