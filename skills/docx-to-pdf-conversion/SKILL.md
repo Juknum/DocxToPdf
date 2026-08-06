@@ -173,3 +173,17 @@ double printableWidth = rightMargin - leftMargin;
 - [ ] **Table Spans & Borders**: Verify cell merging (`gridSpan`/`vMerge`), padding, and borders render cleanly.
 - [ ] **Image Placement**: Confirm images scale accurately according to EMU measurements without stretching.
 - [ ] **Header / Footer Consistency**: Ensure page numbers and header/footer text render on designated pages.
+
+---
+
+## 6. Code Quality & Development Principles
+
+1. **No Inline Shell Execution Scripts (`python -c`)**:
+   - Never run inline shell evaluation scripts (e.g., `python3 -c '...'`). Always write scratch script files (`.py`) to disk (e.g., in `.temp` / `scratch`) and execute the script file instead.
+2. **Strictly Agnostic Architecture (No Hardcoded Overrides)**:
+   - Parser, layout, and renderer implementations must be 100% file-agnostic and OpenXML spec-compliant. Never hardcode document-specific color hex codes, element IDs, or magic coordinate offsets for specific test files.
+3. **Comprehensive XML Documentation Comments**:
+   - All classes, public and internal methods, properties, and constructors must include clear, complete XML doc comments (`/// <summary>...`).
+4. **Method Unit Test Coverage**:
+   - Every public and internal method or conversion unit must have an associated unit test in `DocxToPdf.Tests` verifying its behavior and edge cases.
+

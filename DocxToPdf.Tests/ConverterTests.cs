@@ -122,6 +122,60 @@ namespace DocxToPdf.Tests {
 				if (File.Exists(tempPdfPath)) File.Delete(tempPdfPath);
 			}
 		}
+
+		[Fact]
+		public void TestEmfRasterizerInvalidDataReturnsFalse() {
+			using var pdf = new PdfSharp.Pdf.PdfDocument();
+			var page = pdf.AddPage();
+			using var gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+
+			bool resultNull = DocxToPdf.Rendering.EmfRasterizer.RenderEmf(null!, gfx, 0, 0, 100, 100);
+			Assert.False(resultNull);
+
+			bool resultEmpty = DocxToPdf.Rendering.EmfRasterizer.RenderEmf(new byte[10], gfx, 0, 0, 100, 100);
+			Assert.False(resultEmpty);
+		}
+
+		[Fact]
+		public void TestEmfRasterizerValidEmfStream() {
+			string filesDir = E2EWorkflowTests.FindDocxToPdfFilesDirectory();
+			string inputDocx = Path.Combine(filesDir, "InternshipCover", "input.docx");
+			using var wordDoc = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(inputDocx, false);
+			bool foundEmf = false;
+			foreach (var part in wordDoc.MainDocumentPart!.Parts) {
+				if (part.OpenXmlPart.Uri.ToString().EndsWith(".emf", System.StringComparison.OrdinalIgnoreCase)) {
+					foundEmf = true;
+					using var stream = part.OpenXmlPart.GetStream();
+					using var ms = new MemoryStream();
+					stream.CopyTo(ms);
+					byte[] bytes = ms.ToArray();
+
+					using var pdf = new PdfSharp.Pdf.PdfDocument();
+					var page = pdf.AddPage();
+					using var gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+
+					bool rendered = DocxToPdf.Rendering.EmfRasterizer.RenderEmf(bytes, gfx, 0, 0, 500, 30);
+					Assert.True(rendered);
+				}
+			}
+			foreach (var imagePart in wordDoc.MainDocumentPart.ImageParts) {
+				if (imagePart.Uri.ToString().EndsWith(".emf", System.StringComparison.OrdinalIgnoreCase)) {
+					foundEmf = true;
+					using var stream = imagePart.GetStream();
+					using var ms = new MemoryStream();
+					stream.CopyTo(ms);
+					byte[] bytes = ms.ToArray();
+
+					using var pdf = new PdfSharp.Pdf.PdfDocument();
+					var page = pdf.AddPage();
+					using var gfx = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+
+					bool rendered = DocxToPdf.Rendering.EmfRasterizer.RenderEmf(bytes, gfx, 0, 0, 500, 30);
+					Assert.True(rendered);
+				}
+			}
+			Assert.True(foundEmf);
+		}
 	}
 }
 

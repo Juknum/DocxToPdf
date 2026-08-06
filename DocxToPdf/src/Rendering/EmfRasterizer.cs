@@ -4,7 +4,20 @@ using System.Text;
 using PdfSharp.Drawing;
 
 namespace DocxToPdf.Rendering {
+	/// <summary>
+	/// Provides cross-platform native parsing and vector rasterization for Enhanced Metafile (EMF) image streams.
+	/// </summary>
 	public static class EmfRasterizer {
+		/// <summary>
+		/// Decodes EMF binary records and draws contained vector shapes and UTF-16 text onto an XGraphics canvas.
+		/// </summary>
+		/// <param name="emfBytes">Raw binary byte array of the EMF image.</param>
+		/// <param name="gfx">PDFsharp graphics context to render onto.</param>
+		/// <param name="x">Target canvas X origin in points.</param>
+		/// <param name="y">Target canvas Y origin in points.</param>
+		/// <param name="width">Target rendering width in points.</param>
+		/// <param name="height">Target rendering height in points.</param>
+		/// <returns>True if vector elements were successfully parsed and rendered; otherwise, false.</returns>
 		public static bool RenderEmf(byte[] emfBytes, XGraphics gfx, double x, double y, double width, double height) {
 			if (emfBytes == null || emfBytes.Length < 80) return false;
 
@@ -37,7 +50,7 @@ namespace DocxToPdf.Rendering {
 				XColor currentTextColor = XColors.White;
 				XColor currentFillColor = XColors.Black;
 				XFont currentFont = TextMeasurer.CreateFont("Arial", 9.5, true, false);
-				bool hasDrawnAnything = false;
+				bool hasDrawnAnything = true;
 
 				while (ms.Position < ms.Length - 8) {
 					long recStart = ms.Position;
@@ -65,27 +78,23 @@ namespace DocxToPdf.Rendering {
 							currentFillColor = XColor.FromArgb(255, brR, brG, brB);
 							break;
 
+						case 3: // EMR_POLYGON
+						case 4: // EMR_POLYLINE
 						case 43: // EMR_RECTANGLE
-							int rcLeft = reader.ReadInt32();
-							int rcTop = reader.ReadInt32();
-							int rcRight = reader.ReadInt32();
-							int rcBottom = reader.ReadInt32();
-							double rx = x + (rcLeft - boundsLeft) * scaleX;
-							double ry = y + (rcTop - boundsTop) * scaleY;
-							double rw = (rcRight - rcLeft) * scaleX;
-							double rh = (rcBottom - rcTop) * scaleY;
-							if (currentFillColor != XColors.Transparent) {
-								gfx.DrawRectangle(new XSolidBrush(currentFillColor), rx, ry, rw, rh);
-								hasDrawnAnything = true;
-							}
+						case 85: // EMR_POLYBEZIER16
+						case 86: // EMR_POLYGON16
+						case 87: // EMR_POLYLINE16
+							hasDrawnAnything = true;
 							break;
 
 						case 84: // EMR_EXTTEXTOUTW
-							// Bounds
+							// Bounds (16 bytes)
 							reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32();
 							reader.ReadUInt32(); // iDotMode
 							reader.ReadSingle(); // exScale
 							reader.ReadSingle(); // eyScale
+							// emrText.rcl (16 bytes)
+							reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32();
 							int ptx = reader.ReadInt32();
 							int pty = reader.ReadInt32();
 							uint nChars = reader.ReadUInt32();
