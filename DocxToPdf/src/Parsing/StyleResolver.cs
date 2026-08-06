@@ -229,8 +229,12 @@ namespace DocxToPdf.Parsing {
 
 			// Text Color (w:color)
 			Color? color = rPr.GetFirstChild<Color>();
-			if (color?.Val?.Value != null) {
-				target.TextColorHex = TwipConverter.NormalizeHexColor(color.Val.Value, "#000000");
+			if (color != null) {
+				if (color.Val?.Value != null) {
+					target.TextColorHex = TwipConverter.NormalizeHexColor(color.Val.Value, "#000000");
+				} else if (color.ThemeColor?.Value != null) {
+					target.TextColorHex = "#000000";
+				}
 			}
 
 			// Background Shading (w:shd) or Highlight (w:highlight)

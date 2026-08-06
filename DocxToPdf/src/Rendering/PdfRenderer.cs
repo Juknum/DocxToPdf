@@ -37,14 +37,14 @@ namespace DocxToPdf.Rendering {
 					int pPage = 1;
 					var bgDrawings = new System.Collections.Generic.List<DrawingModel>();
 					foreach (var elem in section.Elements) {
-						if (elem is DrawingModel drw && drw.BehindDoc && drw.ImageData != null && drw.ImageData.Length > 0 && pPage == pageIndex) {
+						if (elem is DrawingModel drw && drw.BehindDoc && drw.ImageData != null && drw.ImageData.Length > 0 && drw.WidthPt >= 500 && pPage == pageIndex) {
 							bgDrawings.Add(drw);
 						}
 						if (elem is ParagraphModel p && p.HasPageBreak) {
 							pPage++;
 						}
 					}
-					foreach (var drw in bgDrawings.OrderBy(d => (d.WidthPt > 500 && d.HeightPt > 300) ? 0 : d.ZIndex)) {
+					foreach (var drw in bgDrawings) {
 						double dummyY = 0;
 						ImageRenderer.RenderDrawing(drw, currentGfx, leftX, ref dummyY, printableWidth);
 					}
@@ -112,12 +112,7 @@ namespace DocxToPdf.Rendering {
 						}
 
 					} else if (element is DrawingModel drawing) {
-						if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
-							// Full page cover background photo
-							double dummyY = 0;
-							ImageRenderer.RenderDrawing(drawing, gfx, leftX, ref dummyY, printableWidth);
-							continue;
-						}
+						if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) continue; // Already rendered in background layer pass
 
 						var (imgW, imgH) = ImageRenderer.MeasureDrawing(drawing, printableWidth);
 

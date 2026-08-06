@@ -49,8 +49,8 @@ namespace DocxToPdf.Rendering {
 
 			double y = currentY;
 			if (drawing.Placement == DrawingPlacement.Floating) {
-				if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && (width >= 500 || drawing.OffsetYPt <= 10)) {
-					y = drawing.OffsetYPt;
+				if (drawing.BehindDoc && drawing.ImageData != null && drawing.ImageData.Length > 0 && drawing.WidthPt >= 500) {
+					y = 0;
 				} else if (!string.IsNullOrEmpty(drawing.VerticalRelativeFrom) &&
 					string.Equals(drawing.VerticalRelativeFrom, "page", StringComparison.OrdinalIgnoreCase)) {
 					y = drawing.OffsetYPt;

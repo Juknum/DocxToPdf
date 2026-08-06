@@ -98,7 +98,7 @@ namespace DocxToPdf.Rendering {
 
 								double tx = x + (ptx - boundsLeft) * scaleX;
 								double ty = y + (pty - boundsTop) * scaleY;
-								gfx.DrawString(text, currentFont, new XSolidBrush(currentTextColor), tx, ty + 12.0);
+								gfx.DrawString(text, currentFont, new XSolidBrush(currentTextColor), tx, ty + 9.5);
 								hasDrawnAnything = true;
 							}
 							break;
