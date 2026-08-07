@@ -4,15 +4,26 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
-	public class TableParser {
-		private readonly StyleResolver _styleResolver;
+	/// <summary>
+	/// Parses OpenXML <see cref="Table"/> structures into <see cref="TableModel"/> instances with grid dimensions, cell properties, and borders.
+	/// </summary>
+	/// <param name="styleResolver">The style resolver instance.</param>
+	public class TableParser(StyleResolver styleResolver) {
+		private readonly StyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
 
-		public TableParser(StyleResolver styleResolver) {
-			_styleResolver = styleResolver;
-		}
-
+		/// <summary>
+		/// Parses an OpenXML Table element into a <see cref="TableModel"/>.
+		/// </summary>
+		/// <param name="tbl">The OpenXML Table element. Cannot be null.</param>
+		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
+		/// <param name="paragraphParser">Optional paragraph parser instance.</param>
+		/// <returns>A populated <see cref="TableModel"/>.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="tbl"/> or <paramref name="mediaResolver"/> is null.</exception>
 		public TableModel ParseTable(Table tbl, MediaResolver mediaResolver, ParagraphParser? paragraphParser = null) {
-			TableModel tableModel = new TableModel();
+			if (tbl == null) throw new ArgumentNullException(nameof(tbl));
+			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
+
+			TableModel tableModel = new();
 
 			// 1. Table Properties (w:tblPr)
 			TableProperties? tblPr = tbl.GetFirstChild<TableProperties>();
@@ -27,6 +38,14 @@ namespace DocxToPdf.Parsing {
 
 				if (tblPr.TableCellMarginDefault != null) {
 					tableModel.DefaultCellPadding = ParseTableCellMarginDefault(tblPr.TableCellMarginDefault);
+				}
+
+				Shading? tblShd = tblPr.GetFirstChild<Shading>();
+				if (tblShd?.Fill?.Value != null) {
+					string bg = TwipConverter.NormalizeHexColor(tblShd.Fill.Value, string.Empty);
+					if (!string.IsNullOrEmpty(bg) && !bg.Equals("auto", StringComparison.OrdinalIgnoreCase)) {
+						tableModel.DefaultBackgroundColorHex = bg;
+					}
 				}
 			}
 
@@ -58,7 +77,7 @@ namespace DocxToPdf.Parsing {
 
 				// Cells (w:tc)
 				foreach (TableCell tc in tr.Elements<TableCell>()) {
-					TableCellModel cellModel = ParseTableCell(tc, tableModel.Borders, tableModel.DefaultCellPadding, mediaResolver, paragraphParser);
+					TableCellModel cellModel = ParseTableCell(tc, tableModel.Borders, tableModel.DefaultCellPadding, tableModel.DefaultBackgroundColorHex, mediaResolver, paragraphParser);
 					rowModel.Cells.Add(cellModel);
 				}
 
@@ -68,8 +87,9 @@ namespace DocxToPdf.Parsing {
 			return tableModel;
 		}
 
-		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, MediaResolver mediaResolver, ParagraphParser? paragraphParser) {
+		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, string? defaultBgHex, MediaResolver mediaResolver, ParagraphParser? paragraphParser) {
 			TableCellModel cellModel = new TableCellModel {
+				BackgroundColorHex = defaultBgHex,
 				Padding = new CellPaddingModel {
 					Top = defaultPadding.Top,
 					Bottom = defaultPadding.Bottom,
@@ -127,6 +147,19 @@ namespace DocxToPdf.Parsing {
 				TableCellMargin? tcMar = tcPr.GetFirstChild<TableCellMargin>();
 				if (tcMar != null) {
 					ApplyCellMargin(cellModel.Padding, tcMar);
+				}
+
+				// Cell Vertical Alignment (w:vAlign)
+				TableCellVerticalAlignment? vAlign = tcPr.GetFirstChild<TableCellVerticalAlignment>();
+				if (vAlign?.Val?.Value != null) {
+					var val = vAlign.Val.Value;
+					if (val == TableVerticalAlignmentValues.Center) {
+						cellModel.VerticalAlignment = CellVerticalAlignment.Center;
+					} else if (val == TableVerticalAlignmentValues.Bottom) {
+						cellModel.VerticalAlignment = CellVerticalAlignment.Bottom;
+					} else {
+						cellModel.VerticalAlignment = CellVerticalAlignment.Top;
+					}
 				}
 			}
 

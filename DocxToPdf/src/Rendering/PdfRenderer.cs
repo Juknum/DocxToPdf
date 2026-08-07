@@ -7,21 +7,39 @@ using PdfSharp.Pdf;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Rendering {
+	/// <summary>
+	/// Represents active page context tracking state (page, graphics, section, page number) during multi-pass rendering.
+	/// </summary>
 	public class PageContext {
+		/// <summary>Gets or sets the PDF page instance.</summary>
 		public PdfPage Page { get; set; } = null!;
+		/// <summary>Gets or sets the XGraphics context for the page.</summary>
 		public XGraphics Graphics { get; set; } = null!;
+		/// <summary>Gets or sets the parent section model.</summary>
 		public SectionModel Section { get; set; } = null!;
+		/// <summary>Gets or sets the 1-indexed page number.</summary>
 		public int PageNumber { get; set; }
 	}
 
+	/// <summary>
+	/// Primary document rendering engine converting <see cref="DocumentModel"/> instances into PDFsharp <see cref="PdfDocument"/> objects.
+	/// </summary>
 	public static class PdfRenderer {
 
+		/// <summary>
+		/// Renders a document model into a PDF document.
+		/// </summary>
+		/// <param name="documentModel">The document model to render. Cannot be null.</param>
+		/// <returns>A populated <see cref="PdfDocument"/> containing rendered pages.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="documentModel"/> is null.</exception>
 		public static PdfDocument Render(DocumentModel documentModel) {
-			PdfDocument pdf = new PdfDocument();
+			if (documentModel == null) throw new ArgumentNullException(nameof(documentModel));
+
+			PdfDocument pdf = new();
 
 			if (documentModel.Sections.Count == 0) {
 				// Handle empty document fallback
-				SectionModel defaultSection = new SectionModel();
+				SectionModel defaultSection = new();
 				CreateNewPage(pdf, defaultSection, 1, out _);
 				return pdf;
 			}
@@ -57,11 +75,12 @@ namespace DocxToPdf.Rendering {
 
 				double currentY = section.PageSetup.Margins.Top;
 				double maxY = section.PageSetup.Height - section.PageSetup.Margins.Bottom;
+				double previousSpacingAfter = 0;
 
 				foreach (var element in section.Elements) {
 
 					if (element is ParagraphModel paragraph) {
-						var pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, globalPageCounter, 1);
+						var pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, previousSpacingAfter, globalPageCounter, 1);
 
 						bool wasPushedToNewPage = false;
 						// Page break check
@@ -71,11 +90,13 @@ namespace DocxToPdf.Rendering {
 							pageContexts.Add(pageCtx);
 							RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 							currentY = section.PageSetup.Margins.Top;
-							pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, globalPageCounter, 1);
+							previousSpacingAfter = 0;
+							pLayout = TextLayoutEngine.MeasureParagraph(paragraph, gfx, printableWidth, 0, globalPageCounter, 1);
 							wasPushedToNewPage = true;
 						}
 
 						TextLayoutEngine.RenderParagraph(pLayout, gfx, leftX, ref currentY);
+						previousSpacingAfter = paragraph.SpacingAfterPt;
 
 						if (paragraph.HasPageBreak && !wasPushedToNewPage) {
 							globalPageCounter++;
@@ -83,6 +104,7 @@ namespace DocxToPdf.Rendering {
 							pageContexts.Add(pageCtx);
 							RenderBackgroundDrawingsForPage(globalPageCounter, gfx);
 							currentY = section.PageSetup.Margins.Top;
+							previousSpacingAfter = 0;
 						}
 
 					} else if (element is TableModel table) {
@@ -101,13 +123,13 @@ namespace DocxToPdf.Rendering {
 								// Repeat table header rows on new page if present
 								if (headerRows.Count > 0 && !rowLayout.IsHeader) {
 									foreach (var hRow in headerRows) {
-										TableRenderer.RenderRow(hRow, table, gfx, leftX, currentY);
+										TableRenderer.RenderRow(hRow, table, gfx, leftX, currentY, printableWidth);
 										currentY += hRow.Height;
 									}
 								}
 							}
 
-							TableRenderer.RenderRow(rowLayout, table, gfx, leftX, currentY);
+							TableRenderer.RenderRow(rowLayout, table, gfx, leftX, currentY, printableWidth);
 							currentY += rowLayout.Height;
 						}
 

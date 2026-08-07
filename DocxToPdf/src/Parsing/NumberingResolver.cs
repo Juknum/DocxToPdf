@@ -5,12 +5,21 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
+	/// <summary>
+	/// Resolves document numbering definitions (bullets, numbered lists, multi-level counters) from OpenXML numbering parts.
+	/// </summary>
 	public class NumberingResolver {
-		private readonly Dictionary<int, int> _numIdToAbstractNumId = new Dictionary<int, int>();
-		private readonly Dictionary<int, AbstractNum> _abstractNumById = new Dictionary<int, AbstractNum>();
-		private readonly Dictionary<string, int> _counters = new Dictionary<string, int>();
+		private readonly Dictionary<int, int> _numIdToAbstractNumId = new();
+		private readonly Dictionary<int, AbstractNum> _abstractNumById = new();
+		private readonly Dictionary<string, int> _counters = new();
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="NumberingResolver"/> class.
+		/// </summary>
+		/// <param name="wordDoc">The WordprocessingDocument package. Cannot be null.</param>
 		public NumberingResolver(WordprocessingDocument wordDoc) {
+			if (wordDoc == null) throw new ArgumentNullException(nameof(wordDoc));
+
 			NumberingDefinitionsPart? numberingPart = wordDoc.MainDocumentPart?.NumberingDefinitionsPart;
 			if (numberingPart?.Numbering != null) {
 				Numbering numbering = numberingPart.Numbering;
@@ -29,6 +38,11 @@ namespace DocxToPdf.Parsing {
 			}
 		}
 
+		/// <summary>
+		/// Resolves paragraph numbering properties into a <see cref="ListFormatModel"/>.
+		/// </summary>
+		/// <param name="numPr">The OpenXML NumberingProperties element.</param>
+		/// <returns>A populated <see cref="ListFormatModel"/> or null if numbering properties are missing.</returns>
 		public ListFormatModel? ResolveListFormat(NumberingProperties? numPr) {
 			if (numPr?.NumberingId?.Val?.Value == null || numPr.NumberingLevelReference?.Val?.Value == null) {
 				return null;

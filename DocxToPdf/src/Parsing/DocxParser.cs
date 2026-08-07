@@ -7,26 +7,37 @@ using DocxToPdf.Model;
 using ModelHeaderFooterType = DocxToPdf.Model.HeaderFooterType;
 
 namespace DocxToPdf.Parsing {
+	/// <summary>
+	/// Provides functionality to parse OpenXML <see cref="WordprocessingDocument"/> structures into an in-memory <see cref="DocumentModel"/>.
+	/// </summary>
 	public class DocxParser {
+		/// <summary>
+		/// Parses a WordprocessingDocument package into a <see cref="DocumentModel"/>.
+		/// </summary>
+		/// <param name="wordDoc">The OpenXML WordprocessingDocument instance. Cannot be null.</param>
+		/// <returns>A populated <see cref="DocumentModel"/>.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="wordDoc"/> is null.</exception>
 		public static DocumentModel Parse(WordprocessingDocument wordDoc) {
+			if (wordDoc == null) throw new ArgumentNullException(nameof(wordDoc));
+
 			if (wordDoc.MainDocumentPart?.Document?.Body == null) {
 				return new DocumentModel();
 			}
 
-			StyleResolver styleResolver = new StyleResolver(wordDoc);
-			NumberingResolver numberingResolver = new NumberingResolver(wordDoc);
-			MediaResolver mainMediaResolver = new MediaResolver(wordDoc.MainDocumentPart);
+			StyleResolver styleResolver = new(wordDoc);
+			NumberingResolver numberingResolver = new(wordDoc);
+			MediaResolver mainMediaResolver = new(wordDoc.MainDocumentPart);
 
-			ParagraphParser paragraphParser = new ParagraphParser(styleResolver, numberingResolver);
-			TableParser tableParser = new TableParser(styleResolver);
-			HeaderFooterParser headerFooterParser = new HeaderFooterParser(wordDoc, paragraphParser, tableParser);
+			ParagraphParser paragraphParser = new(styleResolver, numberingResolver);
+			TableParser tableParser = new(styleResolver);
+			HeaderFooterParser headerFooterParser = new(wordDoc, paragraphParser, tableParser);
 
-			DocumentModel documentModel = new DocumentModel();
+			DocumentModel documentModel = new();
 			Body body = wordDoc.MainDocumentPart.Document.Body;
 
 			// Word documents can have multiple sections.
 			// Body level elements before a section break belong to that section.
-			SectionModel currentSection = new SectionModel();
+			SectionModel currentSection = new();
 			documentModel.Sections.Add(currentSection);
 
 			foreach (var element in body.ChildElements) {

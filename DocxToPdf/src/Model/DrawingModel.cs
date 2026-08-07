@@ -5,7 +5,9 @@ namespace DocxToPdf.Model {
 	/// Specifies the placement style of a drawing element within a document.
 	/// </summary>
 	public enum DrawingPlacement {
+		/// <summary>Inline drawing rendered flowingly within text layout.</summary>
 		Inline,
+		/// <summary>Floating drawing positioned absolutely relative to page/margin frames.</summary>
 		Floating
 	}
 
@@ -62,6 +64,6 @@ namespace DocxToPdf.Model {
 		public long ZIndex { get; set; }
 
 		/// <summary>Gets or sets nested paragraph models contained within shape textboxes.</summary>
-		public System.Collections.Generic.List<ParagraphModel> TextboxParagraphs { get; set; } = new System.Collections.Generic.List<ParagraphModel>();
+		public System.Collections.Generic.List<ParagraphModel> TextboxParagraphs { get; set; } = [];
 	}
 }

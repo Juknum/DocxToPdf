@@ -5,7 +5,14 @@ using DocxToPdf;
 using DocxToPdf.Model;
 
 namespace ConsoleApp {
+	/// <summary>
+	/// Entry point class for the DocxToPdf command-line utility and E2E verification test tool.
+	/// </summary>
 	internal class Program {
+		/// <summary>
+		/// Main entry point method processing command-line arguments.
+		/// </summary>
+		/// <param name="args">Command-line arguments.</param>
 		private static void Main(string[] args) {
 			if (args.Length == 0) {
 				Console.WriteLine("DocxToPdf Console & E2E Tool");

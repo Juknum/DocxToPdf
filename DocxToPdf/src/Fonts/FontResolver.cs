@@ -10,6 +10,8 @@ namespace DocxToPdf.Fonts {
 	/// </summary>
 	public class CrossPlatformFontResolver : IFontResolver {
 		private static readonly Lazy<CrossPlatformFontResolver> LazyInstance = new(() => new CrossPlatformFontResolver());
+
+		/// <summary>Gets singleton instance of <see cref="CrossPlatformFontResolver"/>.</summary>
 		public static CrossPlatformFontResolver Instance => LazyInstance.Value;
 
 		private static readonly ConcurrentDictionary<string, byte[]> FontDataCache = new(StringComparer.OrdinalIgnoreCase);
@@ -23,6 +25,9 @@ namespace DocxToPdf.Fonts {
 		private static readonly object InitLock = new();
 #endif
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CrossPlatformFontResolver"/> class.
+		/// </summary>
 		public CrossPlatformFontResolver() {
 			EnsureInitialized();
 		}
@@ -75,6 +80,13 @@ namespace DocxToPdf.Fonts {
 			}
 		}
 
+		/// <summary>
+		/// Resolves a font typeface requested by font family name and style flags.
+		/// </summary>
+		/// <param name="familyName">Font family name.</param>
+		/// <param name="isBold">Whether font is bold.</param>
+		/// <param name="isItalic">Whether font is italic.</param>
+		/// <returns>A <see cref="FontResolverInfo"/> object or null if unresolvable.</returns>
 		public FontResolverInfo? ResolveTypeface(string familyName, bool isBold, bool isItalic) {
 			EnsureInitialized();
 
@@ -111,6 +123,11 @@ namespace DocxToPdf.Fonts {
 			return null;
 		}
 
+		/// <summary>
+		/// Reads and returns the raw font file bytes for a resolved face name.
+		/// </summary>
+		/// <param name="faceName">The face name returned by ResolveTypeface.</param>
+		/// <returns>Byte array of font file data or null if not found.</returns>
 		public byte[]? GetFont(string faceName) {
 			EnsureInitialized();
 

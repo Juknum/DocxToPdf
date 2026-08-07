@@ -5,17 +5,26 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
-	public class ParagraphParser {
-		private readonly StyleResolver _styleResolver;
-		private readonly NumberingResolver _numberingResolver;
+	/// <summary>
+	/// Parses OpenXML <see cref="Paragraph"/> elements into <see cref="ParagraphModel"/> or block element collections.
+	/// </summary>
+	/// <param name="styleResolver">The style resolver instance.</param>
+	/// <param name="numberingResolver">The numbering resolver instance.</param>
+	public class ParagraphParser(StyleResolver styleResolver, NumberingResolver numberingResolver) {
+		private readonly StyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
+		private readonly NumberingResolver _numberingResolver = numberingResolver ?? throw new ArgumentNullException(nameof(numberingResolver));
 
-		public ParagraphParser(StyleResolver styleResolver, NumberingResolver numberingResolver) {
-			_styleResolver = styleResolver;
-			_numberingResolver = numberingResolver;
-		}
-
+		/// <summary>
+		/// Parses an OpenXML Paragraph into a single <see cref="ParagraphModel"/>.
+		/// </summary>
+		/// <param name="p">The OpenXML Paragraph element. Cannot be null.</param>
+		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
+		/// <returns>A populated <see cref="ParagraphModel"/>.</returns>
 		public ParagraphModel ParseParagraph(Paragraph p, MediaResolver mediaResolver) {
-			ParagraphModel pModel = new ParagraphModel();
+			if (p == null) throw new ArgumentNullException(nameof(p));
+			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
+
+			ParagraphModel pModel = new();
 
 			ParagraphProperties? pPr = p.ParagraphProperties;
 			string? paragraphStyleId = pPr?.ParagraphStyleId?.Val?.Value;
@@ -35,6 +44,14 @@ namespace DocxToPdf.Parsing {
 			// Resolve List & Bullet formatting (w:numPr)
 			if (pPr?.NumberingProperties != null) {
 				pModel.ListFormat = _numberingResolver.ResolveListFormat(pPr.NumberingProperties);
+			}
+
+			// Resolve paragraph shading (w:shd)
+			if (pPr?.Shading?.Fill?.Value != null) {
+				string bg = TwipConverter.NormalizeHexColor(pPr.Shading.Fill.Value, string.Empty);
+				if (!string.IsNullOrEmpty(bg) && !bg.Equals("auto", StringComparison.OrdinalIgnoreCase)) {
+					pModel.BackgroundColorHex = bg;
+				}
 			}
 
 			// Iterate over child elements (Runs, SimpleFields, Drawings, Hyperlinks)
@@ -57,16 +74,32 @@ namespace DocxToPdf.Parsing {
 			return pModel;
 		}
 
+		/// <summary>
+		/// Parses an OpenXML Paragraph into a list of block elements, extracting inline tables or standalone drawings.
+		/// </summary>
+		/// <param name="p">The OpenXML Paragraph element. Cannot be null.</param>
+		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
+		/// <param name="tableParser">Optional TableParser instance for nested table extraction.</param>
+		/// <returns>A list of parsed <see cref="IBlockElement"/> instances.</returns>
 		public List<IBlockElement> ParseParagraphToElements(Paragraph p, MediaResolver mediaResolver, TableParser? tableParser = null) {
+			if (p == null) throw new ArgumentNullException(nameof(p));
+			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
 			List<IBlockElement> elements = new List<IBlockElement>();
 
 			// Extract drawings and pictures embedded in paragraph
 			List<DrawingModel> drawings = ExtractAllDrawings(p, mediaResolver);
-			elements.AddRange(drawings);
 
 			// Parse paragraph text and formatting
 			ParagraphModel pModel = ParseParagraph(p, mediaResolver);
-			elements.Add(pModel);
+
+			if (drawings.Count > 0) {
+				elements.AddRange(drawings);
+				if (pModel.Runs.Count > 0 && pModel.Runs.Any(r => !string.IsNullOrWhiteSpace(r.Text))) {
+					elements.Add(pModel);
+				}
+			} else {
+				elements.Add(pModel);
+			}
 
 			return elements;
 		}
@@ -127,6 +160,10 @@ namespace DocxToPdf.Parsing {
 		}
 
 		private void ParseRun(Run r, ParagraphProperties? pPr, string? paragraphStyleId, ParagraphModel pModel, MediaResolver mediaResolver, bool isHyperlink = false) {
+			if (r.Ancestors<Drawing>().Any() || r.Ancestors<Picture>().Any()) {
+				return;
+			}
+
 			RunProperties? rPr = r.RunProperties;
 			string? runStyleId = rPr?.RunStyle?.Val?.Value;
 

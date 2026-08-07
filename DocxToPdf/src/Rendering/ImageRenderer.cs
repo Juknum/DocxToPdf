@@ -4,9 +4,20 @@ using PdfSharp.Drawing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Rendering {
+	/// <summary>
+	/// Provides measurement and rendering logic for OpenXML drawings, images, and EMF vector graphics.
+	/// </summary>
 	public static class ImageRenderer {
 
+		/// <summary>
+		/// Measures the layout dimensions in points of a drawing model within a container width constraint.
+		/// </summary>
+		/// <param name="drawing">The drawing model to measure. Cannot be null.</param>
+		/// <param name="containerWidth">Available printable width in points.</param>
+		/// <returns>A tuple containing (Width, Height) in points.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="drawing"/> is null.</exception>
 		public static (double Width, double Height) MeasureDrawing(DrawingModel drawing, double containerWidth) {
+			if (drawing == null) throw new ArgumentNullException(nameof(drawing));
 			double width = drawing.WidthPt;
 			double height = drawing.HeightPt;
 
@@ -57,12 +68,12 @@ namespace DocxToPdf.Rendering {
 					using XImage img = XImage.FromStream(ms);
 					gfx.DrawImage(img, x, y, width, height);
 					rendered = true;
-				} catch (Exception ex) {
-					string header = drawing.ImageData.Length >= 4 ? $"{drawing.ImageData[0]:X2}{drawing.ImageData[1]:X2}{drawing.ImageData[2]:X2}{drawing.ImageData[3]:X2}" : "";
-					Console.WriteLine($"[ImageRenderer] Failed to render native image (ContentType={drawing.ContentType}, Bytes={drawing.ImageData.Length}, Header={header}): {ex.Message}. Attempting EmfRasterizer...");
-
+				} catch {
 					if (EmfRasterizer.RenderEmf(drawing.ImageData, gfx, x, y, width, height)) {
 						rendered = true;
+					} else {
+						string header = drawing.ImageData.Length >= 4 ? $"{drawing.ImageData[0]:X2}{drawing.ImageData[1]:X2}{drawing.ImageData[2]:X2}{drawing.ImageData[3]:X2}" : "";
+						Console.WriteLine($"[ImageRenderer] Failed to render image (ContentType={drawing.ContentType}, Bytes={drawing.ImageData.Length}, Header={header}).");
 					}
 				}
 			}

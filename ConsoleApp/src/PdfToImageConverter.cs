@@ -7,11 +7,25 @@ using Docnet.Core.Models;
 using SkiaSharp;
 
 namespace ConsoleApp {
+	/// <summary>
+	/// Utility helper class for converting PDF documents into PNG page images and performing pixel similarity comparison.
+	/// </summary>
 	public static class PdfToImageConverter {
 		/// <summary>
 		/// Converts all pages of a PDF document into high-resolution PNG images.
 		/// </summary>
+		/// <param name="pdfPath">Path to PDF document file. Cannot be null.</param>
+		/// <param name="outputDir">Target output directory. Cannot be null.</param>
+		/// <param name="filePrefix">Output image filename prefix.</param>
+		/// <param name="dpi">Rendering resolution DPI.</param>
+		/// <param name="scale">Page dimension scale factor.</param>
+		/// <returns>List of generated PNG image file paths.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="pdfPath"/> or <paramref name="outputDir"/> is null.</exception>
+		/// <exception cref="FileNotFoundException">Thrown when <paramref name="pdfPath"/> does not exist.</exception>
 		public static List<string> ConvertPdfToImages(string pdfPath, string outputDir, string filePrefix = "page", int dpi = 150, double scale = 0.5) {
+			if (pdfPath == null) throw new ArgumentNullException(nameof(pdfPath));
+			if (outputDir == null) throw new ArgumentNullException(nameof(outputDir));
+
 			if (!File.Exists(pdfPath)) {
 				throw new FileNotFoundException($"PDF file not found: '{pdfPath}'");
 			}
@@ -34,11 +48,17 @@ namespace ConsoleApp {
 					byte[] rawBytes = pageReader.GetImage();
 
 					var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
-					using var bitmap = new SKBitmap(info);
-					Marshal.Copy(rawBytes, 0, bitmap.GetPixels(), rawBytes.Length);
+					using var rawBitmap = new SKBitmap(info);
+					Marshal.Copy(rawBytes, 0, rawBitmap.GetPixels(), rawBytes.Length);
+
+					using var flattenedBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+					using (var canvas = new SKCanvas(flattenedBitmap)) {
+						canvas.Clear(SKColors.White);
+						canvas.DrawBitmap(rawBitmap, 0, 0);
+					}
 
 					string outPath = Path.Combine(outputDir, $"{filePrefix}_page_{i + 1}.png");
-					using var image = SKImage.FromBitmap(bitmap);
+					using var image = SKImage.FromBitmap(flattenedBitmap);
 					using var data = image.Encode(SKEncodedImageFormat.Png, 100);
 					using var stream = File.Create(outPath);
 					data.SaveTo(stream);
@@ -124,7 +144,17 @@ namespace ConsoleApp {
 			return allPassed;
 		}
 
+		/// <summary>
+		/// Compares two SKBitmap images pixel by pixel within a color tolerance threshold.
+		/// </summary>
+		/// <param name="img1">First bitmap image. Cannot be null.</param>
+		/// <param name="img2">Second bitmap image. Cannot be null.</param>
+		/// <param name="colorTolerance">Color channel RGB difference tolerance.</param>
+		/// <returns>Similarity score between 0.0 (0% match) and 1.0 (100% match).</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="img1"/> or <paramref name="img2"/> is null.</exception>
 		public static double CompareImages(SKBitmap img1, SKBitmap img2, byte colorTolerance = 30) {
+			if (img1 == null) throw new ArgumentNullException(nameof(img1));
+			if (img2 == null) throw new ArgumentNullException(nameof(img2));
 			int minWidth = Math.Min(img1.Width, img2.Width);
 			int minHeight = Math.Min(img1.Height, img2.Height);
 			int maxWidth = Math.Max(img1.Width, img2.Width);

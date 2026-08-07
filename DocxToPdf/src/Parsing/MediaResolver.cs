@@ -8,13 +8,18 @@ using Wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
-	public class MediaResolver {
-		private readonly OpenXmlPartContainer _partContainer;
+	/// <summary>
+	/// Extracts binary image data and vector shape properties from OpenXML drawing elements.
+	/// </summary>
+	/// <param name="partContainer">The part container holding relationship image parts.</param>
+	public class MediaResolver(OpenXmlPartContainer partContainer) {
+		private readonly OpenXmlPartContainer _partContainer = partContainer ?? throw new ArgumentNullException(nameof(partContainer));
 
-		public MediaResolver(OpenXmlPartContainer partContainer) {
-			_partContainer = partContainer;
-		}
-
+		/// <summary>
+		/// Extracts a <see cref="DrawingModel"/> from an OpenXML <see cref="Drawing"/> element.
+		/// </summary>
+		/// <param name="drawing">The OpenXML Drawing element.</param>
+		/// <returns>A populated <see cref="DrawingModel"/> or null if element is invalid.</returns>
 		public DrawingModel? ExtractDrawing(Drawing drawing) {
 			if (drawing == null) return null;
 
@@ -128,6 +133,11 @@ namespace DocxToPdf.Parsing {
 				};
 		}
 
+		/// <summary>
+		/// Extracts a <see cref="DrawingModel"/> from legacy VML <see cref="Picture"/> elements.
+		/// </summary>
+		/// <param name="pict">The OpenXML Picture element.</param>
+		/// <returns>A populated <see cref="DrawingModel"/> or null if unresolvable.</returns>
 		public DrawingModel? ExtractPict(Picture pict) {
 			if (pict == null) return null;
 
@@ -139,6 +149,14 @@ namespace DocxToPdf.Parsing {
 			return ExtractImageByRelationshipId(relationshipId!, DrawingPlacement.Inline, 0, 0);
 		}
 
+		/// <summary>
+		/// Extracts binary image data by relationship ID and creates a <see cref="DrawingModel"/>.
+		/// </summary>
+		/// <param name="relationshipId">OpenXML relationship ID string.</param>
+		/// <param name="placement">Drawing placement (Inline or Floating).</param>
+		/// <param name="cx">Width in EMUs.</param>
+		/// <param name="cy">Height in EMUs.</param>
+		/// <returns>A populated <see cref="DrawingModel"/> or null if image part is missing.</returns>
 		public DrawingModel? ExtractImageByRelationshipId(string relationshipId, DrawingPlacement placement, long cx, long cy) {
 			if (string.IsNullOrEmpty(relationshipId)) return null;
 

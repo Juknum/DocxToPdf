@@ -6,35 +6,67 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
+	/// <summary>
+	/// Represents resolved run formatting styles including font family, size, colors, and decorations.
+	/// </summary>
 	public class ResolvedRunStyle {
+		/// <summary>Gets or sets font family name.</summary>
 		public string FontFamily { get; set; } = "Arial";
+		/// <summary>Gets or sets font size in points.</summary>
 		public double FontSizePt { get; set; } = 11.0;
+		/// <summary>Gets or sets whether text is bold.</summary>
 		public bool IsBold { get; set; }
+		/// <summary>Gets or sets whether text is italic.</summary>
 		public bool IsItalic { get; set; }
+		/// <summary>Gets or sets whether text has underline decoration.</summary>
 		public bool IsUnderline { get; set; }
+		/// <summary>Gets or sets whether text has strikethrough decoration.</summary>
 		public bool IsStrikeThrough { get; set; }
+		/// <summary>Gets or sets text foreground color in HEX format.</summary>
 		public string TextColorHex { get; set; } = "#000000";
+		/// <summary>Gets or sets text background shading color in HEX format.</summary>
 		public string? BackgroundColorHex { get; set; }
 	}
 
+	/// <summary>
+	/// Represents resolved paragraph formatting styles including alignment, line spacing, and indentations.
+	/// </summary>
 	public class ResolvedParagraphStyle {
+		/// <summary>Gets or sets paragraph text alignment.</summary>
 		public ParagraphAlignment Alignment { get; set; } = ParagraphAlignment.Left;
+		/// <summary>Gets or sets spacing before paragraph in points.</summary>
 		public double SpacingBeforePt { get; set; }
+		/// <summary>Gets or sets spacing after paragraph in points.</summary>
 		public double SpacingAfterPt { get; set; }
+		/// <summary>Gets or sets line height in points.</summary>
 		public double LineHeightPt { get; set; }
+		/// <summary>Gets or sets whether line height is specified as a multiple.</summary>
 		public bool IsLineHeightMultiple { get; set; }
+		/// <summary>Gets or sets left margin indentation in points.</summary>
 		public double LeftIndentPt { get; set; }
+		/// <summary>Gets or sets right margin indentation in points.</summary>
 		public double RightIndentPt { get; set; }
+		/// <summary>Gets or sets first line indentation in points.</summary>
 		public double FirstLineIndentPt { get; set; }
+		/// <summary>Gets or sets hanging indentation in points.</summary>
 		public double HangingIndentPt { get; set; }
 	}
 
+	/// <summary>
+	/// Resolves paragraph and run styles across document defaults, named styles, and direct formatting.
+	/// </summary>
 	public class StyleResolver {
-		private readonly Dictionary<string, Style> _stylesById = new Dictionary<string, Style>(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, Style> _stylesById = new(StringComparer.OrdinalIgnoreCase);
 		private RunPropertiesDefault? _defaultRunProperties;
 		private ParagraphPropertiesDefault? _defaultParagraphProperties;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="StyleResolver"/> class.
+		/// </summary>
+		/// <param name="wordDoc">The WordprocessingDocument package. Cannot be null.</param>
 		public StyleResolver(WordprocessingDocument wordDoc) {
+			if (wordDoc == null) throw new ArgumentNullException(nameof(wordDoc));
+
 			StyleDefinitionsPart? stylesPart = wordDoc.MainDocumentPart?.StyleDefinitionsPart;
 			if (stylesPart?.Styles != null) {
 				Styles styles = stylesPart.Styles;
@@ -53,8 +85,14 @@ namespace DocxToPdf.Parsing {
 			}
 		}
 
+		/// <summary>
+		/// Resolves paragraph formatting properties into a <see cref="ResolvedParagraphStyle"/>.
+		/// </summary>
+		/// <param name="pPr">Direct paragraph properties.</param>
+		/// <param name="paragraphStyleId">Paragraph style ID string.</param>
+		/// <returns>A populated <see cref="ResolvedParagraphStyle"/>.</returns>
 		public ResolvedParagraphStyle ResolveParagraphStyle(ParagraphProperties? pPr, string? paragraphStyleId) {
-			ResolvedParagraphStyle result = new ResolvedParagraphStyle();
+			ResolvedParagraphStyle result = new();
 
 			// 1. DocDefaults
 			if (_defaultParagraphProperties?.ParagraphPropertiesBaseStyle != null) {
@@ -74,8 +112,16 @@ namespace DocxToPdf.Parsing {
 			return result;
 		}
 
+		/// <summary>
+		/// Resolves run formatting properties across document defaults, paragraph styles, run styles, and direct formatting.
+		/// </summary>
+		/// <param name="rPr">Direct run properties.</param>
+		/// <param name="runStyleId">Run style ID string.</param>
+		/// <param name="pPr">Direct paragraph properties.</param>
+		/// <param name="paragraphStyleId">Paragraph style ID string.</param>
+		/// <returns>A populated <see cref="ResolvedRunStyle"/>.</returns>
 		public ResolvedRunStyle ResolveRunStyle(RunProperties? rPr, string? runStyleId, ParagraphProperties? pPr, string? paragraphStyleId) {
-			ResolvedRunStyle result = new ResolvedRunStyle();
+			ResolvedRunStyle result = new();
 
 			// 1. DocDefaults
 			if (_defaultRunProperties?.RunPropertiesBaseStyle != null) {

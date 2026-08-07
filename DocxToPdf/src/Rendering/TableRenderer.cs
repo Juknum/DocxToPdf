@@ -5,25 +5,56 @@ using PdfSharp.Drawing;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Rendering {
+	/// <summary>
+	/// Represents measured layout metrics (X, Width, Height, Paragraphs) for a single table cell.
+	/// </summary>
 	public class TableCellLayout {
-		public TableCellModel Cell { get; set; } = new TableCellModel();
+		/// <summary>Gets or sets the underlying cell model.</summary>
+		public TableCellModel Cell { get; set; } = new();
+		/// <summary>Gets or sets the cell X origin relative to table left edge.</summary>
 		public double X { get; set; }
+		/// <summary>Gets or sets the cell width in points.</summary>
 		public double Width { get; set; }
+		/// <summary>Gets or sets the cell height in points.</summary>
 		public double Height { get; set; }
-		public List<ParagraphLayout> Paragraphs { get; set; } = new List<ParagraphLayout>();
+		/// <summary>Gets or sets measured paragraph layouts contained within the cell.</summary>
+		public List<ParagraphLayout> Paragraphs { get; set; } = [];
 	}
 
+	/// <summary>
+	/// Represents measured layout metrics (Cells, Height) for a single table row.
+	/// </summary>
 	public class TableRowLayout {
-		public TableRowModel Row { get; set; } = new TableRowModel();
-		public List<TableCellLayout> Cells { get; set; } = new List<TableCellLayout>();
+		/// <summary>Gets or sets the underlying row model.</summary>
+		public TableRowModel Row { get; set; } = new();
+		/// <summary>Gets or sets measured cell layouts in this row.</summary>
+		public List<TableCellLayout> Cells { get; set; } = [];
+		/// <summary>Gets or sets total row height in points.</summary>
 		public double Height { get; set; }
+		/// <summary>Gets whether this row is a header row.</summary>
 		public bool IsHeader => Row.IsHeader;
 	}
 
+	/// <summary>
+	/// Provides measurement and rendering logic for tables, rows, cells, borders, and background shading.
+	/// </summary>
 	public static class TableRenderer {
 
+		/// <summary>
+		/// Measures all row and cell heights in a table model given container width constraints.
+		/// </summary>
+		/// <param name="table">The table model. Cannot be null.</param>
+		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
+		/// <param name="containerWidth">Available printable width in points.</param>
+		/// <param name="currentPage">Current 1-indexed page number.</param>
+		/// <param name="totalPages">Total page count.</param>
+		/// <returns>A list of measured <see cref="TableRowLayout"/> instances.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="table"/> or <paramref name="gfx"/> is null.</exception>
 		public static List<TableRowLayout> MeasureTable(TableModel table, XGraphics gfx, double containerWidth, int currentPage = 1, int totalPages = 1) {
-			List<TableRowLayout> rowLayouts = new List<TableRowLayout>();
+			if (table == null) throw new ArgumentNullException(nameof(table));
+			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
+
+			List<TableRowLayout> rowLayouts = [];
 
 			// Resolve column widths
 			List<double> colWidths = ResolveColumnWidths(table, containerWidth);
@@ -119,15 +150,29 @@ namespace DocxToPdf.Rendering {
 			};
 		}
 
-		public static void RenderRow(TableRowLayout rowLayout, TableModel table, XGraphics gfx, double containerX, double currentY) {
+		/// <summary>
+		/// Renders a single table row, including cell backgrounds, cell text/paragraphs, and cell borders onto the graphics canvas.
+		/// </summary>
+		/// <param name="rowLayout">The measured row layout model. Cannot be null.</param>
+		/// <param name="table">The parent table model. Cannot be null.</param>
+		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
+		/// <param name="containerX">Left margin origin in points.</param>
+		/// <param name="currentY">Top Y coordinate in points.</param>
+		/// <param name="containerWidth">Available printable width in points.</param>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="rowLayout"/>, <paramref name="table"/>, or <paramref name="gfx"/> is null.</exception>
+		public static void RenderRow(TableRowLayout rowLayout, TableModel table, XGraphics gfx, double containerX, double currentY, double containerWidth = 0) {
+			if (rowLayout == null) throw new ArgumentNullException(nameof(rowLayout));
+			if (table == null) throw new ArgumentNullException(nameof(table));
+			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
+			if (containerWidth <= 0) {
+				containerWidth = Math.Max(1.0, gfx.PageSize.Width - containerX * 2.0);
+			}
 			double alignOffset = 0;
+			double tableWidth = rowLayout.Cells.Sum(c => c.Width);
 			if (table.Alignment == ParagraphAlignment.Center) {
-				double tableWidth = rowLayout.Cells.Sum(c => c.Width);
-				double availWidth = gfx.PageSize.Width; // Approximate container alignment
-				alignOffset = Math.Max(0, (availWidth - tableWidth) / 2.0);
+				alignOffset = Math.Max(0, (containerWidth - tableWidth) / 2.0);
 			} else if (table.Alignment == ParagraphAlignment.Right) {
-				double tableWidth = rowLayout.Cells.Sum(c => c.Width);
-				alignOffset = Math.Max(0, gfx.PageSize.Width - tableWidth);
+				alignOffset = Math.Max(0, containerWidth - tableWidth);
 			}
 
 			double rowX = containerX + alignOffset;
@@ -152,7 +197,17 @@ namespace DocxToPdf.Rendering {
 				// 3. Render cell content (paragraphs)
 				CellPaddingModel padding = MergePadding(cellLayout.Cell.Padding, table.DefaultCellPadding);
 				double innerX = cellLeft + padding.Left;
-				double innerY = cellTop + padding.Top;
+
+				double contentHeight = cellLayout.Paragraphs.Sum(p => p.TotalHeight);
+				double availCellHeight = cellHeight - padding.Top - padding.Bottom;
+				double vOffset = 0;
+				if (cellLayout.Cell.VerticalAlignment == CellVerticalAlignment.Center) {
+					vOffset = Math.Max(0, (availCellHeight - contentHeight) / 2.0);
+				} else if (cellLayout.Cell.VerticalAlignment == CellVerticalAlignment.Bottom) {
+					vOffset = Math.Max(0, availCellHeight - contentHeight);
+				}
+
+				double innerY = cellTop + padding.Top + vOffset;
 
 				foreach (var pLayout in cellLayout.Paragraphs) {
 					TextLayoutEngine.RenderParagraph(pLayout, gfx, innerX, ref innerY);
