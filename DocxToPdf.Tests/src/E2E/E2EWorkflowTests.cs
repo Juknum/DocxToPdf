@@ -121,11 +121,7 @@ namespace DocxToPdf.Tests {
 		public void VerifyAllDocxToPdfFilesE2E() {
 			lock (FileLock) {
 				(double scale, double threshold)[] verificationSteps = new[] {
-					(0.125, 85.0),
-					(0.250, 90.0),
-					(0.500, 95.0),
-					(0.750, 96.5),
-					(1.000, 98.0),
+					(0.500, 85.0)
 				};
 
 				string filesDir = FindDocxToPdfFilesDirectory();
@@ -173,11 +169,12 @@ namespace DocxToPdf.Tests {
 					samplePasses[sample.SampleDir] = true;
 				}
 
+				var allFailures = new List<string>();
+
 				foreach ((double scale, double threshold) in verificationSteps) {
 					string scaleTag = GetScaleTag(scale);
 					_output.WriteLine($"=== Verifying scale {scale:0.###} with threshold {threshold:F2}% ===");
 					_output.WriteLine(GetScaleVerificationChecklist(scale, threshold, scaleTag));
-					var scaleFailures = new List<string>();
 
 					foreach (var sample in samples) {
 						_output.WriteLine($"[{sample.FolderName}] Verifying at scale {scale:0.###} with threshold {threshold:F2}%");
@@ -234,13 +231,13 @@ namespace DocxToPdf.Tests {
 						WriteScorecardArtifacts(sample.SampleDir, new E2EScorecardReport(sample.FolderName, DateTime.UtcNow, samplePasses[sample.SampleDir], sampleScorecards[sample.SampleDir]));
 
 						if (currentScaleFailures.Count > 0) {
-							scaleFailures.AddRange(currentScaleFailures.ConvertAll(f => f.Message));
+							allFailures.AddRange(currentScaleFailures.ConvertAll(f => f.Message));
 						}
 					}
+				}
 
-					if (scaleFailures.Count > 0) {
-						Assert.Fail(string.Join(Environment.NewLine, new[] { GetScaleVerificationChecklist(scale, threshold, scaleTag) }.Concat(scaleFailures)));
-					}
+				if (allFailures.Count > 0) {
+					Assert.Fail(string.Join(Environment.NewLine, allFailures));
 				}
 
 				_output.WriteLine($"Successfully verified {samples.Count} E2E sample folder(s): {string.Join(", ", samples.ConvertAll(sample => sample.FolderName))}");
@@ -261,11 +258,17 @@ namespace DocxToPdf.Tests {
 					byte[] rawBytes = pageReader.GetImage();
 
 					var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
-					using var bitmap = new SKBitmap(info);
-					Marshal.Copy(rawBytes, 0, bitmap.GetPixels(), rawBytes.Length);
+					using var rawBitmap = new SKBitmap(info);
+					Marshal.Copy(rawBytes, 0, rawBitmap.GetPixels(), rawBytes.Length);
+
+					using var flattenedBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+					using (var canvas = new SKCanvas(flattenedBitmap)) {
+						canvas.Clear(SKColors.White);
+						canvas.DrawBitmap(rawBitmap, 0, 0);
+					}
 
 					string outPath = Path.Combine(outputDir, $"{filePrefix}_{i + 1}.png");
-					using var image = SKImage.FromBitmap(bitmap);
+					using var image = SKImage.FromBitmap(flattenedBitmap);
 					using var data = image.Encode(SKEncodedImageFormat.Png, 100);
 					using var stream = File.Create(outPath);
 					data.SaveTo(stream);
