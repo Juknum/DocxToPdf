@@ -71,19 +71,16 @@ namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Text layout engine responsible for word wrapping, paragraph measurement, justification, and rendering onto XGraphics.
 	/// </summary>
-	public static class TextLayoutEngine {
+	public class TextLayoutEngine : ITextLayoutEngine {
+		/// <inheritdoc />
+		ParagraphLayout ITextLayoutEngine.MeasureParagraph(ParagraphModel paragraph, XGraphics gfx, double containerWidth, double previousSpacingAfter, int currentPage, int totalPages)
+			=> MeasureParagraph(paragraph, gfx, containerWidth, previousSpacingAfter, currentPage, totalPages);
 
-		/// <summary>
-		/// Measures and word-wraps a paragraph model into a <see cref="ParagraphLayout"/> within printable container constraints.
-		/// </summary>
-		/// <param name="paragraph">The paragraph model. Cannot be null.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <param name="containerWidth">Available printable width in points.</param>
-		/// <param name="previousSpacingAfter">Spacing after from the previous paragraph for collapsing rules.</param>
-		/// <param name="currentPage">Current 1-indexed page number.</param>
-		/// <param name="totalPages">Total page count.</param>
-		/// <returns>A populated <see cref="ParagraphLayout"/>.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="paragraph"/> or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
+		void ITextLayoutEngine.RenderParagraph(ParagraphLayout layout, XGraphics gfx, double containerX, ref double currentY)
+			=> RenderParagraph(layout, gfx, containerX, ref currentY);
+
+		/// <inheritdoc />
 		public static ParagraphLayout MeasureParagraph(ParagraphModel paragraph, XGraphics gfx, double containerWidth, double previousSpacingAfter = 0, int currentPage = 1, int totalPages = 1) {
 			if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
@@ -270,14 +267,7 @@ namespace DocxToPdf.Rendering {
 			return baseFontHeight; // baseFontHeight (XFont.Height) already includes default line leading
 		}
 
-		/// <summary>
-		/// Renders a measured paragraph layout onto the PDF graphics canvas at the specified coordinates.
-		/// </summary>
-		/// <param name="layout">The measured paragraph layout model. Cannot be null.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <param name="containerX">Left margin origin in points.</param>
-		/// <param name="currentY">Ref top Y coordinate in points updated as lines are drawn.</param>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="layout"/> or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
 		public static void RenderParagraph(ParagraphLayout layout, XGraphics gfx, double containerX, ref double currentY) {
 			if (layout == null) throw new ArgumentNullException(nameof(layout));
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));

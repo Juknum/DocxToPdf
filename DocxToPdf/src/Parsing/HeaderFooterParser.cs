@@ -13,16 +13,12 @@ namespace DocxToPdf.Parsing {
 	/// <param name="wordDoc">The WordprocessingDocument package.</param>
 	/// <param name="paragraphParser">The ParagraphParser instance.</param>
 	/// <param name="tableParser">The TableParser instance.</param>
-	public class HeaderFooterParser(WordprocessingDocument wordDoc, ParagraphParser paragraphParser, TableParser tableParser) {
+	public class HeaderFooterParser(WordprocessingDocument wordDoc, IParagraphParser paragraphParser, ITableParser tableParser) : IHeaderFooterParser {
 		private readonly WordprocessingDocument _wordDoc = wordDoc ?? throw new ArgumentNullException(nameof(wordDoc));
-		private readonly ParagraphParser _paragraphParser = paragraphParser ?? throw new ArgumentNullException(nameof(paragraphParser));
-		private readonly TableParser _tableParser = tableParser ?? throw new ArgumentNullException(nameof(tableParser));
+		private readonly IParagraphParser _paragraphParser = paragraphParser ?? throw new ArgumentNullException(nameof(paragraphParser));
+		private readonly ITableParser _tableParser = tableParser ?? throw new ArgumentNullException(nameof(tableParser));
 
-		/// <summary>
-		/// Parses a header reference into a <see cref="HeaderFooterModel"/>.
-		/// </summary>
-		/// <param name="headerRef">The OpenXML HeaderReference element.</param>
-		/// <returns>A populated <see cref="HeaderFooterModel"/> or null if reference cannot be resolved.</returns>
+		/// <inheritdoc />
 		public HeaderFooterModel? ParseHeader(HeaderReference headerRef) {
 			if (headerRef?.Id?.Value == null) return null;
 
@@ -38,11 +34,7 @@ namespace DocxToPdf.Parsing {
 			return model;
 		}
 
-		/// <summary>
-		/// Parses a footer reference into a <see cref="HeaderFooterModel"/>.
-		/// </summary>
-		/// <param name="footerRef">The OpenXML FooterReference element.</param>
-		/// <returns>A populated <see cref="HeaderFooterModel"/> or null if reference cannot be resolved.</returns>
+		/// <inheritdoc />
 		public HeaderFooterModel? ParseFooter(FooterReference footerRef) {
 			if (footerRef?.Id?.Value == null) return null;
 

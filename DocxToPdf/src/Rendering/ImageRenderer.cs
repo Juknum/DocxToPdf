@@ -3,19 +3,22 @@ using System.IO;
 using PdfSharp.Drawing;
 using DocxToPdf.Model;
 
+using DocxToPdf.Constants;
+
 namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Provides measurement and rendering logic for OpenXML drawings, images, and EMF vector graphics.
 	/// </summary>
-	public static class ImageRenderer {
+	public class ImageRenderer : IImageRenderer {
+		/// <inheritdoc />
+		(double Width, double Height) IImageRenderer.MeasureDrawing(DrawingModel drawing, double containerWidth)
+			=> MeasureDrawing(drawing, containerWidth);
 
-		/// <summary>
-		/// Measures the layout dimensions in points of a drawing model within a container width constraint.
-		/// </summary>
-		/// <param name="drawing">The drawing model to measure. Cannot be null.</param>
-		/// <param name="containerWidth">Available printable width in points.</param>
-		/// <returns>A tuple containing (Width, Height) in points.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="drawing"/> is null.</exception>
+		/// <inheritdoc />
+		void IImageRenderer.RenderDrawing(DrawingModel drawing, XGraphics gfx, double containerX, ref double currentY, double containerWidth)
+			=> RenderDrawing(drawing, gfx, containerX, ref currentY, containerWidth);
+
+		/// <inheritdoc />
 		public static (double Width, double Height) MeasureDrawing(DrawingModel drawing, double containerWidth) {
 			if (drawing == null) throw new ArgumentNullException(nameof(drawing));
 			double width = drawing.WidthPt;
@@ -43,15 +46,7 @@ namespace DocxToPdf.Rendering {
 			return (width, height);
 		}
 
-		/// <summary>
-		/// Renders an OpenXML drawing model onto a PDFsharp XGraphics canvas.
-		/// </summary>
-		/// <param name="drawing">The drawing model to render.</param>
-		/// <param name="gfx">PDFsharp graphics context.</param>
-		/// <param name="containerX">The paragraph container X origin in points.</param>
-		/// <param name="currentY">The current paragraph anchor Y coordinate in points.</param>
-		/// <param name="containerWidth">The printable width in points.</param>
-		/// <returns>The height in points consumed by inline drawings.</returns>
+		/// <inheritdoc />
 		public static double RenderDrawing(DrawingModel drawing, XGraphics gfx, double containerX, ref double currentY, double containerWidth) {
 			var (width, height) = MeasureDrawing(drawing, containerWidth);
 			if (width <= 0) width = 100;

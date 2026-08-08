@@ -237,16 +237,60 @@ public bool HasInvalidChars(string input) {
 
 ---
 
-## 4. Best Practices Checklist
+## 4. Architectural Design & Testing Standards
+
+### A. No Magic Strings
+All repeated or domain-specific string literals (such as font names `"Arial"`, color codes `"#000000"`, MIME types `"image/png"`, OpenXML attribute keys `"margin"`, `"page"`, `"bullet"`) MUST NOT be hardcoded inside business logic methods.
+
+* Encapsulate all string constants into dedicated, strongly typed `public static class Constants` or domain-specific constant classes (`FontConstants`, `ColorConstants`, `MediaConstants`, etc.).
+* Use `nameof(...)` or constant references instead of hardcoded symbol names.
+
+---
+
+### B. Interface Definitions & `<inheritdoc />` Documentation Standard
+Every domain service, parser, resolver, renderer, or converter class MUST implement a dedicated interface (`I...`).
+
+1. **XML Documentation Placement**: Complete C# XML documentation comments (`///`) containing `<summary>`, `<param>`, `<returns>`, and `<exception>` tags MUST reside directly on the interface definition (`I...`).
+2. **Concrete Implementation Tag**: Concrete classes implementing the interface MUST use the `<inheritdoc />` tag on their class members instead of repeating XML comments:
+   ```csharp
+   public interface IDocxParser {
+       /// <summary>
+       /// Parses a WordprocessingDocument into a DocumentModel.
+       /// </summary>
+       /// <param name="wordDoc">The input package. Cannot be null.</param>
+       /// <returns>A populated DocumentModel.</returns>
+       DocumentModel Parse(WordprocessingDocument wordDoc);
+   }
+
+   public class DocxParser : IDocxParser {
+       /// <inheritdoc />
+       public DocumentModel Parse(WordprocessingDocument wordDoc) { ... }
+   }
+   ```
+3. **No `src` Attribute Needed**: Do NOT specify the `cref` / `src` attribute inside `<inheritdoc />` unless compiler resolution ambiguity requires explicit targeting.
+
+---
+
+### C. Unit Testing & Interface Mocking with Moq
+Unit test projects MUST use the **[Moq](https://github.com/devlooped/moq)** framework (`<PackageReference Include="Moq" Version="..." />`) to create test doubles for interface dependencies (`Mock<I...>`):
+
+* Test components in isolation by mocking their interface contracts (`Mock<IParagraphParser>`, `Mock<IStyleResolver>`, etc.).
+* Setup expected method calls (`mock.Setup(...)`) and verify interactions (`mock.Verify(...)`) using Moq APIs.
+
+---
+
+## 5. Best Practices Checklist
 
 1. **Keep Sources in `src/`**: Never place `.cs` source files directly in the project root directory alongside `.csproj`.
 2. **Categorize Tests**: Keep Unit tests (`src/Unit/`) and E2E tests (`src/E2E/`) separated in test projects.
 3. **Prefer Early Returns**: Structure logic with guard clauses to avoid deeply nested conditional branches.
 4. **Use Modern C# Syntax**: Apply modern language features (`LangVersion=latest`) like primary constructors, file-scoped namespaces, pattern matching, and collection expressions.
-5. **Mandatory XML Documentation**: Document every class, interface, enum, method, and property with complete `///` XML comments and ensure `<GenerateDocumentationFile>true</GenerateDocumentationFile>` is enabled in `.csproj`.
-6. **Prefer PolySharp over `#if` Directives**: ALWAYS prefer PolySharp features over `#if` directives. Use `#if` conditional compilation only when PolySharp cannot bridge a runtime BCL API difference.
-7. **Localize Directives**: Keep preprocessor blocks as narrow and localized as possible when runtime BCL differences force their use. Do not duplicate entire class definitions or long business methods.
-8. **Multi-Target Verification**: Always test builds against all target frameworks specified in `.csproj` (`dotnet build`).
+5. **Class Interfaces & `<inheritdoc />`**: Every class MUST implement an interface (`I...`). Place complete `///` XML comments on the interface and use `<inheritdoc />` on the concrete class members.
+6. **No Magic Strings**: Encapsulate all string literals in strongly typed constant classes (`FontConstants`, `ColorConstants`, etc.).
+7. **Moq for Unit Testing**: Use `Moq` (`Mock<I...>`) to mock interface contracts in unit tests.
+8. **Prefer PolySharp over `#if` Directives**: ALWAYS prefer PolySharp features over `#if` directives. Use `#if` conditional compilation only when PolySharp cannot bridge a runtime BCL API difference.
+9. **Localize Directives**: Keep preprocessor blocks as narrow and localized as possible when runtime BCL differences force their use. Do not duplicate entire class definitions or long business methods.
+10. **Multi-Target Verification**: Always test builds against all target frameworks specified in `.csproj` (`dotnet build`).
 
 
 

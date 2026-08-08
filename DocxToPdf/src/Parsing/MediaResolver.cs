@@ -6,20 +6,17 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using A = DocumentFormat.OpenXml.Drawing;
 using Wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using DocxToPdf.Model;
+using DocxToPdf.Constants;
 
 namespace DocxToPdf.Parsing {
 	/// <summary>
 	/// Extracts binary image data and vector shape properties from OpenXML drawing elements.
 	/// </summary>
 	/// <param name="partContainer">The part container holding relationship image parts.</param>
-	public class MediaResolver(OpenXmlPartContainer partContainer) {
+	public class MediaResolver(OpenXmlPartContainer partContainer) : IMediaResolver {
 		private readonly OpenXmlPartContainer _partContainer = partContainer ?? throw new ArgumentNullException(nameof(partContainer));
 
-		/// <summary>
-		/// Extracts a <see cref="DrawingModel"/> from an OpenXML <see cref="Drawing"/> element.
-		/// </summary>
-		/// <param name="drawing">The OpenXML Drawing element.</param>
-		/// <returns>A populated <see cref="DrawingModel"/> or null if element is invalid.</returns>
+		/// <inheritdoc />
 		public DrawingModel? ExtractDrawing(Drawing drawing) {
 			if (drawing == null) return null;
 
@@ -60,7 +57,7 @@ namespace DocxToPdf.Parsing {
 				Wp.HorizontalPosition? posH = anchor.GetFirstChild<Wp.HorizontalPosition>();
 				if (posH != null) {
 					if (posH.RelativeFrom != null) {
-						relHStr = posH.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+						relHStr = posH.RelativeFrom.InnerText?.ToLowerInvariant() ?? OpenXmlConstants.Margin;
 					}
 					Wp.PositionOffset? offsetH = posH.GetFirstChild<Wp.PositionOffset>();
 					if (offsetH != null && long.TryParse(offsetH.Text, out long hVal)) {
@@ -75,7 +72,7 @@ namespace DocxToPdf.Parsing {
 				Wp.VerticalPosition? posV = anchor.GetFirstChild<Wp.VerticalPosition>();
 				if (posV != null) {
 					if (posV.RelativeFrom != null) {
-						relVStr = posV.RelativeFrom.InnerText?.ToLowerInvariant() ?? "margin";
+						relVStr = posV.RelativeFrom.InnerText?.ToLowerInvariant() ?? OpenXmlConstants.Margin;
 					}
 					Wp.PositionOffset? offsetV = posV.GetFirstChild<Wp.PositionOffset>();
 					if (offsetV != null && long.TryParse(offsetV.Text, out long vVal)) {
@@ -88,56 +85,55 @@ namespace DocxToPdf.Parsing {
 				}
 			}
 
-				string? relationshipId = FindBlipRelationshipId(drawing);
-				byte[]? imageData = null;
-				string contentType = "image/png";
+			string? relationshipId = FindBlipRelationshipId(drawing);
+			byte[]? imageData = null;
+			string contentType = MediaConstants.PngContentType;
 
-				if (!string.IsNullOrEmpty(relationshipId)) {
-					try {
-						ImagePart? imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
-						if (imagePart != null) {
-							using Stream stream = imagePart.GetStream();
-							using MemoryStream ms = new MemoryStream();
+			if (!string.IsNullOrEmpty(relationshipId)) {
+				try {
+					ImagePart? imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
+					if (imagePart != null) {
+						using (Stream stream = imagePart.GetStream())
+						using (MemoryStream ms = new MemoryStream()) {
 							stream.CopyTo(ms);
 							imageData = ms.ToArray();
-							contentType = imagePart.ContentType ?? "image/png";
 						}
-					} catch { }
+						contentType = imagePart.ContentType ?? MediaConstants.PngContentType;
+					}
+				} catch {
+					// Fallback if image part cannot be loaded
 				}
+			}
 
-				string? fillColorHex = FindSolidFillColor(drawing);
-				string? borderColorHex = FindBorderColor(drawing);
-				bool hasTextbox = drawing.Descendants<Paragraph>().Any();
+			string? fillColorHex = FindSolidFillColor(drawing);
+			string? borderColorHex = FindBorderColor(drawing);
+			bool hasTextbox = drawing.Descendants<Paragraph>().Any();
 
-				if ((imageData == null || imageData.Length == 0) && string.IsNullOrEmpty(fillColorHex) && string.IsNullOrEmpty(borderColorHex) && !hasTextbox) {
-					return null;
-				}
+			if ((imageData == null || imageData.Length == 0) && string.IsNullOrEmpty(fillColorHex) && string.IsNullOrEmpty(borderColorHex) && !hasTextbox) {
+				return null;
+			}
 
-				return new DrawingModel {
-					RelationshipId = relationshipId ?? string.Empty,
-					ImageData = imageData ?? System.Array.Empty<byte>(),
-					ContentType = contentType,
-					WidthPt = TwipConverter.EmusToPoints(cx),
-					HeightPt = TwipConverter.EmusToPoints(cy),
-					Placement = placement,
-					OffsetXPt = TwipConverter.EmusToPoints(offsetXEmu),
-					OffsetYPt = TwipConverter.EmusToPoints(offsetYEmu),
-					AlignH = alignH,
-					AlignV = alignV,
-					BehindDoc = behindDoc,
-					HorizontalRelativeFrom = relHStr,
-					VerticalRelativeFrom = relVStr,
-					FillColorHex = fillColorHex,
-					BorderColorHex = borderColorHex,
-					ZIndex = anchor?.RelativeHeight?.Value ?? 0
-				};
+			return new DrawingModel {
+				RelationshipId = relationshipId,
+				ImageData = imageData,
+				ContentType = contentType,
+				WidthPt = TwipConverter.EmusToPoints(cx),
+				HeightPt = TwipConverter.EmusToPoints(cy),
+				Placement = placement,
+				OffsetXPt = TwipConverter.EmusToPoints(offsetXEmu),
+				OffsetYPt = TwipConverter.EmusToPoints(offsetYEmu),
+				HorizontalRelativeFrom = relHStr,
+				VerticalRelativeFrom = relVStr,
+				AlignH = alignH,
+				AlignV = alignV,
+				BehindDoc = behindDoc,
+				FillColorHex = fillColorHex,
+				BorderColorHex = borderColorHex,
+				ZIndex = anchor?.RelativeHeight?.Value ?? 0
+			};
 		}
 
-		/// <summary>
-		/// Extracts a <see cref="DrawingModel"/> from legacy VML <see cref="Picture"/> elements.
-		/// </summary>
-		/// <param name="pict">The OpenXML Picture element.</param>
-		/// <returns>A populated <see cref="DrawingModel"/> or null if unresolvable.</returns>
+		/// <inheritdoc />
 		public DrawingModel? ExtractPict(Picture pict) {
 			if (pict == null) return null;
 
@@ -149,14 +145,7 @@ namespace DocxToPdf.Parsing {
 			return ExtractImageByRelationshipId(relationshipId!, DrawingPlacement.Inline, 0, 0);
 		}
 
-		/// <summary>
-		/// Extracts binary image data by relationship ID and creates a <see cref="DrawingModel"/>.
-		/// </summary>
-		/// <param name="relationshipId">OpenXML relationship ID string.</param>
-		/// <param name="placement">Drawing placement (Inline or Floating).</param>
-		/// <param name="cx">Width in EMUs.</param>
-		/// <param name="cy">Height in EMUs.</param>
-		/// <returns>A populated <see cref="DrawingModel"/> or null if image part is missing.</returns>
+		/// <inheritdoc />
 		public DrawingModel? ExtractImageByRelationshipId(string relationshipId, DrawingPlacement placement, long cx, long cy) {
 			if (string.IsNullOrEmpty(relationshipId)) return null;
 
@@ -181,7 +170,7 @@ namespace DocxToPdf.Parsing {
 			return new DrawingModel {
 				RelationshipId = relationshipId,
 				ImageData = imageData,
-				ContentType = imagePart.ContentType ?? "image/png",
+				ContentType = imagePart.ContentType ?? MediaConstants.PngContentType,
 				WidthPt = TwipConverter.EmusToPoints(cx),
 				HeightPt = TwipConverter.EmusToPoints(cy),
 				Placement = placement

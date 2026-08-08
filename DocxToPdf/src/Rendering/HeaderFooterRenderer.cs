@@ -6,16 +6,16 @@ namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Provides header and footer selection and rendering logic for section pages.
 	/// </summary>
-	public static class HeaderFooterRenderer {
+	public class HeaderFooterRenderer : IHeaderFooterRenderer {
+		/// <inheritdoc />
+		void IHeaderFooterRenderer.RenderHeader(SectionModel section, int pageNumber, int totalPages, XGraphics gfx)
+			=> RenderHeader(section, pageNumber, totalPages, gfx);
 
-		/// <summary>
-		/// Renders section header elements onto the PDF canvas for the specified page.
-		/// </summary>
-		/// <param name="section">The section model. Cannot be null.</param>
-		/// <param name="pageNumber">1-indexed page number within document.</param>
-		/// <param name="totalPages">Total document page count.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="section"/> or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
+		void IHeaderFooterRenderer.RenderFooter(SectionModel section, int pageNumber, int totalPages, XGraphics gfx)
+			=> RenderFooter(section, pageNumber, totalPages, gfx);
+
+		/// <inheritdoc />
 		public static void RenderHeader(SectionModel section, int pageNumber, int totalPages, XGraphics gfx) {
 			if (section == null) throw new ArgumentNullException(nameof(section));
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
@@ -45,14 +45,7 @@ namespace DocxToPdf.Rendering {
 			}
 		}
 
-		/// <summary>
-		/// Renders section footer elements onto the PDF canvas for the specified page.
-		/// </summary>
-		/// <param name="section">The section model. Cannot be null.</param>
-		/// <param name="pageNumber">1-indexed page number within document.</param>
-		/// <param name="totalPages">Total document page count.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="section"/> or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
 		public static void RenderFooter(SectionModel section, int pageNumber, int totalPages, XGraphics gfx) {
 			if (section == null) throw new ArgumentNullException(nameof(section));
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));

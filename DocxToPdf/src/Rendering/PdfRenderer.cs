@@ -24,14 +24,11 @@ namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Primary document rendering engine converting <see cref="DocumentModel"/> instances into PDFsharp <see cref="PdfDocument"/> objects.
 	/// </summary>
-	public static class PdfRenderer {
+	public class PdfRenderer : IPdfRenderer {
+		/// <inheritdoc />
+		public PdfDocument RenderDocument(DocumentModel documentModel) => Render(documentModel);
 
-		/// <summary>
-		/// Renders a document model into a PDF document.
-		/// </summary>
-		/// <param name="documentModel">The document model to render. Cannot be null.</param>
-		/// <returns>A populated <see cref="PdfDocument"/> containing rendered pages.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="documentModel"/> is null.</exception>
+		/// <inheritdoc />
 		public static PdfDocument Render(DocumentModel documentModel) {
 			if (documentModel == null) throw new ArgumentNullException(nameof(documentModel));
 

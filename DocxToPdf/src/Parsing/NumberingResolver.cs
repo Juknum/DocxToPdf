@@ -4,11 +4,13 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
+using DocxToPdf.Constants;
+
 namespace DocxToPdf.Parsing {
 	/// <summary>
 	/// Resolves document numbering definitions (bullets, numbered lists, multi-level counters) from OpenXML numbering parts.
 	/// </summary>
-	public class NumberingResolver {
+	public class NumberingResolver : INumberingResolver {
 		private readonly Dictionary<int, int> _numIdToAbstractNumId = new();
 		private readonly Dictionary<int, AbstractNum> _abstractNumById = new();
 		private readonly Dictionary<string, int> _counters = new();
@@ -38,11 +40,10 @@ namespace DocxToPdf.Parsing {
 			}
 		}
 
-		/// <summary>
-		/// Resolves paragraph numbering properties into a <see cref="ListFormatModel"/>.
-		/// </summary>
-		/// <param name="numPr">The OpenXML NumberingProperties element.</param>
-		/// <returns>A populated <see cref="ListFormatModel"/> or null if numbering properties are missing.</returns>
+		/// <inheritdoc />
+		public ListFormatModel? ResolveNumbering(NumberingProperties? numPr) => ResolveListFormat(numPr);
+
+		/// <inheritdoc />
 		public ListFormatModel? ResolveListFormat(NumberingProperties? numPr) {
 			if (numPr?.NumberingId?.Val?.Value == null || numPr.NumberingLevelReference?.Val?.Value == null) {
 				return null;
@@ -63,9 +64,9 @@ namespace DocxToPdf.Parsing {
 
 			ListType listType = ListType.Bullet;
 			string numFmt = level.NumberingFormat?.Val?.InnerText?.ToLowerInvariant() 
-				?? (level.NumberingFormat?.Val?.HasValue == true ? level.NumberingFormat.Val.Value.ToString().ToLowerInvariant() : "bullet");
+				?? (level.NumberingFormat?.Val?.HasValue == true ? level.NumberingFormat.Val.Value.ToString().ToLowerInvariant() : OpenXmlConstants.Bullet);
 
-			if (numFmt != "bullet" && numFmt != "none") {
+			if (numFmt != OpenXmlConstants.Bullet && numFmt != OpenXmlConstants.None) {
 				listType = ListType.Numbered;
 			}
 
@@ -116,7 +117,7 @@ namespace DocxToPdf.Parsing {
 		}
 
 		private string FormatMarkerText(string? lvlTextPattern, string numFmt, int count) {
-			if (numFmt == "bullet" || string.IsNullOrEmpty(lvlTextPattern)) {
+			if (numFmt == OpenXmlConstants.Bullet || string.IsNullOrEmpty(lvlTextPattern)) {
 				return GetBulletSymbol(lvlTextPattern);
 			}
 

@@ -4,6 +4,8 @@ using System.Linq;
 using PdfSharp.Drawing;
 using DocxToPdf.Model;
 
+using DocxToPdf.Constants;
+
 namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Represents measured layout metrics (X, Width, Height, Paragraphs) for a single table cell.
@@ -38,18 +40,16 @@ namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Provides measurement and rendering logic for tables, rows, cells, borders, and background shading.
 	/// </summary>
-	public static class TableRenderer {
+	public class TableRenderer : ITableRenderer {
+		/// <inheritdoc />
+		List<TableRowLayout> ITableRenderer.MeasureTable(TableModel table, XGraphics gfx, double containerWidth, int currentPage, int totalPages)
+			=> MeasureTable(table, gfx, containerWidth, currentPage, totalPages);
 
-		/// <summary>
-		/// Measures all row and cell heights in a table model given container width constraints.
-		/// </summary>
-		/// <param name="table">The table model. Cannot be null.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <param name="containerWidth">Available printable width in points.</param>
-		/// <param name="currentPage">Current 1-indexed page number.</param>
-		/// <param name="totalPages">Total page count.</param>
-		/// <returns>A list of measured <see cref="TableRowLayout"/> instances.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="table"/> or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
+		void ITableRenderer.RenderRow(TableRowLayout rowLayout, TableModel table, XGraphics gfx, double containerX, double currentY, double containerWidth)
+			=> RenderRow(rowLayout, table, gfx, containerX, currentY, containerWidth);
+
+		/// <inheritdoc />
 		public static List<TableRowLayout> MeasureTable(TableModel table, XGraphics gfx, double containerWidth, int currentPage = 1, int totalPages = 1) {
 			if (table == null) throw new ArgumentNullException(nameof(table));
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
@@ -150,16 +150,7 @@ namespace DocxToPdf.Rendering {
 			};
 		}
 
-		/// <summary>
-		/// Renders a single table row, including cell backgrounds, cell text/paragraphs, and cell borders onto the graphics canvas.
-		/// </summary>
-		/// <param name="rowLayout">The measured row layout model. Cannot be null.</param>
-		/// <param name="table">The parent table model. Cannot be null.</param>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <param name="containerX">Left margin origin in points.</param>
-		/// <param name="currentY">Top Y coordinate in points.</param>
-		/// <param name="containerWidth">Available printable width in points.</param>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="rowLayout"/>, <paramref name="table"/>, or <paramref name="gfx"/> is null.</exception>
+		/// <inheritdoc />
 		public static void RenderRow(TableRowLayout rowLayout, TableModel table, XGraphics gfx, double containerX, double currentY, double containerWidth = 0) {
 			if (rowLayout == null) throw new ArgumentNullException(nameof(rowLayout));
 			if (table == null) throw new ArgumentNullException(nameof(table));

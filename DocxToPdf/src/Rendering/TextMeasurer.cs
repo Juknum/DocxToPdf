@@ -3,20 +3,25 @@ using System.Globalization;
 using PdfSharp.Drawing;
 using DocxToPdf.Model;
 
+using DocxToPdf.Constants;
+
 namespace DocxToPdf.Rendering {
 	/// <summary>
 	/// Provides font creation, color parsing, and text string measurement utilities using PDFsharp XGraphics.
 	/// </summary>
-	public static class TextMeasurer {
+	public class TextMeasurer : ITextMeasurer {
+		/// <inheritdoc />
+		XFont ITextMeasurer.CreateFont(RunModel run) => CreateFont(run);
 
-		/// <summary>
-		/// Parses a HEX color string (e.g. "#FF0000" or "FF0000") into a PDFsharp <see cref="XColor"/>.
-		/// </summary>
-		/// <param name="hexColor">HEX color string or "auto".</param>
-		/// <param name="defaultColor">Fallback XColor to return if hex string is invalid.</param>
-		/// <returns>The parsed <see cref="XColor"/>.</returns>
+		/// <inheritdoc />
+		XColor ITextMeasurer.ParseColor(string? hex, XColor defaultColor) => ParseColor(hex, defaultColor);
+
+		/// <inheritdoc />
+		XSize ITextMeasurer.MeasureString(XGraphics gfx, string text, XFont font) => MeasureString(gfx, text, font);
+
+		/// <inheritdoc />
 		public static XColor ParseColor(string? hexColor, XColor defaultColor) {
-			if (string.IsNullOrWhiteSpace(hexColor) || string.Equals(hexColor, "auto", StringComparison.OrdinalIgnoreCase)) {
+			if (string.IsNullOrWhiteSpace(hexColor) || string.Equals(hexColor, ColorConstants.Auto, StringComparison.OrdinalIgnoreCase)) {
 				return defaultColor;
 			}
 
@@ -39,16 +44,11 @@ namespace DocxToPdf.Rendering {
 			return defaultColor;
 		}
 
-		/// <summary>
-		/// Creates an <see cref="XFont"/> instance matching the font family, size, and style of a <see cref="RunModel"/>.
-		/// </summary>
-		/// <param name="run">The run model. Cannot be null.</param>
-		/// <returns>An <see cref="XFont"/> instance.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="run"/> is null.</exception>
+		/// <inheritdoc />
 		public static XFont CreateFont(RunModel run) {
 			if (run == null) throw new ArgumentNullException(nameof(run));
 
-			string family = string.IsNullOrWhiteSpace(run.FontFamily) ? "Arial" : run.FontFamily;
+			string family = string.IsNullOrWhiteSpace(run.FontFamily) ? FontConstants.DefaultFontFamily : run.FontFamily;
 			double size = run.FontSizePt > 0 ? run.FontSizePt : 11.0;
 
 			XFontStyleEx style = XFontStyleEx.Regular;
@@ -70,7 +70,7 @@ namespace DocxToPdf.Rendering {
 			try {
 				return new XFont(family, size, style);
 			} catch {
-				return new XFont("Arial", size, style);
+				return new XFont(FontConstants.DefaultFontFamily, size, style);
 			}
 		}
 
@@ -83,7 +83,7 @@ namespace DocxToPdf.Rendering {
 		/// <param name="isItalic">Whether font is italic.</param>
 		/// <returns>An <see cref="XFont"/> instance.</returns>
 		public static XFont CreateFont(string familyName, double sizePt, bool isBold = false, bool isItalic = false) {
-			string family = string.IsNullOrWhiteSpace(familyName) ? "Arial" : familyName;
+			string family = string.IsNullOrWhiteSpace(familyName) ? FontConstants.DefaultFontFamily : familyName;
 			double size = sizePt > 0 ? sizePt : 11.0;
 
 			XFontStyleEx style = XFontStyleEx.Regular;
@@ -94,18 +94,11 @@ namespace DocxToPdf.Rendering {
 			try {
 				return new XFont(family, size, style);
 			} catch {
-				return new XFont("Arial", size, style);
+				return new XFont(FontConstants.DefaultFontFamily, size, style);
 			}
 		}
 
-		/// <summary>
-		/// Measures the width and height bounding box of a text string when rendered with an <see cref="XFont"/>.
-		/// </summary>
-		/// <param name="gfx">PDFsharp graphics context. Cannot be null.</param>
-		/// <param name="text">Text string to measure.</param>
-		/// <param name="font">Font instance. Cannot be null.</param>
-		/// <returns>An <see cref="XSize"/> structure containing bounding width and height.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="gfx"/> or <paramref name="font"/> is null.</exception>
+		/// <inheritdoc />
 		public static XSize MeasureString(XGraphics gfx, string text, XFont font) {
 			if (gfx == null) throw new ArgumentNullException(nameof(gfx));
 			if (font == null) throw new ArgumentNullException(nameof(font));

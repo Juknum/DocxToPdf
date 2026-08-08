@@ -10,16 +10,11 @@ namespace DocxToPdf.Parsing {
 	/// </summary>
 	/// <param name="styleResolver">The style resolver instance.</param>
 	/// <param name="numberingResolver">The numbering resolver instance.</param>
-	public class ParagraphParser(StyleResolver styleResolver, NumberingResolver numberingResolver) {
-		private readonly StyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
-		private readonly NumberingResolver _numberingResolver = numberingResolver ?? throw new ArgumentNullException(nameof(numberingResolver));
+	public class ParagraphParser(IStyleResolver styleResolver, INumberingResolver numberingResolver) : IParagraphParser {
+		private readonly IStyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
+		private readonly INumberingResolver _numberingResolver = numberingResolver ?? throw new ArgumentNullException(nameof(numberingResolver));
 
-		/// <summary>
-		/// Parses an OpenXML Paragraph into a single <see cref="ParagraphModel"/>.
-		/// </summary>
-		/// <param name="p">The OpenXML Paragraph element. Cannot be null.</param>
-		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
-		/// <returns>A populated <see cref="ParagraphModel"/>.</returns>
+		/// <inheritdoc />
 		public ParagraphModel ParseParagraph(Paragraph p, MediaResolver mediaResolver) {
 			if (p == null) throw new ArgumentNullException(nameof(p));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
@@ -74,13 +69,7 @@ namespace DocxToPdf.Parsing {
 			return pModel;
 		}
 
-		/// <summary>
-		/// Parses an OpenXML Paragraph into a list of block elements, extracting inline tables or standalone drawings.
-		/// </summary>
-		/// <param name="p">The OpenXML Paragraph element. Cannot be null.</param>
-		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
-		/// <param name="tableParser">Optional TableParser instance for nested table extraction.</param>
-		/// <returns>A list of parsed <see cref="IBlockElement"/> instances.</returns>
+		/// <inheritdoc />
 		public List<IBlockElement> ParseParagraphToElements(Paragraph p, MediaResolver mediaResolver, TableParser? tableParser = null) {
 			if (p == null) throw new ArgumentNullException(nameof(p));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));

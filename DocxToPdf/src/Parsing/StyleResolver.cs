@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocxToPdf.Constants;
 using DocxToPdf.Model;
 
 namespace DocxToPdf.Parsing {
@@ -11,7 +12,7 @@ namespace DocxToPdf.Parsing {
 	/// </summary>
 	public class ResolvedRunStyle {
 		/// <summary>Gets or sets font family name.</summary>
-		public string FontFamily { get; set; } = "Arial";
+		public string FontFamily { get; set; } = FontConstants.DefaultFontFamily;
 		/// <summary>Gets or sets font size in points.</summary>
 		public double FontSizePt { get; set; } = 11.0;
 		/// <summary>Gets or sets whether text is bold.</summary>
@@ -23,7 +24,7 @@ namespace DocxToPdf.Parsing {
 		/// <summary>Gets or sets whether text has strikethrough decoration.</summary>
 		public bool IsStrikeThrough { get; set; }
 		/// <summary>Gets or sets text foreground color in HEX format.</summary>
-		public string TextColorHex { get; set; } = "#000000";
+		public string TextColorHex { get; set; } = ColorConstants.DefaultBlackHex;
 		/// <summary>Gets or sets text background shading color in HEX format.</summary>
 		public string? BackgroundColorHex { get; set; }
 	}
@@ -55,7 +56,7 @@ namespace DocxToPdf.Parsing {
 	/// <summary>
 	/// Resolves paragraph and run styles across document defaults, named styles, and direct formatting.
 	/// </summary>
-	public class StyleResolver {
+	public class StyleResolver : IStyleResolver {
 		private readonly Dictionary<string, Style> _stylesById = new(StringComparer.OrdinalIgnoreCase);
 		private RunPropertiesDefault? _defaultRunProperties;
 		private ParagraphPropertiesDefault? _defaultParagraphProperties;
@@ -85,12 +86,7 @@ namespace DocxToPdf.Parsing {
 			}
 		}
 
-		/// <summary>
-		/// Resolves paragraph formatting properties into a <see cref="ResolvedParagraphStyle"/>.
-		/// </summary>
-		/// <param name="pPr">Direct paragraph properties.</param>
-		/// <param name="paragraphStyleId">Paragraph style ID string.</param>
-		/// <returns>A populated <see cref="ResolvedParagraphStyle"/>.</returns>
+		/// <inheritdoc />
 		public ResolvedParagraphStyle ResolveParagraphStyle(ParagraphProperties? pPr, string? paragraphStyleId) {
 			ResolvedParagraphStyle result = new();
 
@@ -112,14 +108,7 @@ namespace DocxToPdf.Parsing {
 			return result;
 		}
 
-		/// <summary>
-		/// Resolves run formatting properties across document defaults, paragraph styles, run styles, and direct formatting.
-		/// </summary>
-		/// <param name="rPr">Direct run properties.</param>
-		/// <param name="runStyleId">Run style ID string.</param>
-		/// <param name="pPr">Direct paragraph properties.</param>
-		/// <param name="paragraphStyleId">Paragraph style ID string.</param>
-		/// <returns>A populated <see cref="ResolvedRunStyle"/>.</returns>
+		/// <inheritdoc />
 		public ResolvedRunStyle ResolveRunStyle(RunProperties? rPr, string? runStyleId, ParagraphProperties? pPr, string? paragraphStyleId) {
 			ResolvedRunStyle result = new();
 

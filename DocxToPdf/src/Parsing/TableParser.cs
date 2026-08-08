@@ -3,23 +3,18 @@ using System.Collections.Generic;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocxToPdf.Model;
 
+using DocxToPdf.Constants;
+
 namespace DocxToPdf.Parsing {
 	/// <summary>
 	/// Parses OpenXML <see cref="Table"/> structures into <see cref="TableModel"/> instances with grid dimensions, cell properties, and borders.
 	/// </summary>
 	/// <param name="styleResolver">The style resolver instance.</param>
-	public class TableParser(StyleResolver styleResolver) {
-		private readonly StyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
+	public class TableParser(IStyleResolver styleResolver) : ITableParser {
+		private readonly IStyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
 
-		/// <summary>
-		/// Parses an OpenXML Table element into a <see cref="TableModel"/>.
-		/// </summary>
-		/// <param name="tbl">The OpenXML Table element. Cannot be null.</param>
-		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
-		/// <param name="paragraphParser">Optional paragraph parser instance.</param>
-		/// <returns>A populated <see cref="TableModel"/>.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="tbl"/> or <paramref name="mediaResolver"/> is null.</exception>
-		public TableModel ParseTable(Table tbl, MediaResolver mediaResolver, ParagraphParser? paragraphParser = null) {
+		/// <inheritdoc />
+		public TableModel ParseTable(Table tbl, MediaResolver mediaResolver, IParagraphParser? paragraphParser = null) {
 			if (tbl == null) throw new ArgumentNullException(nameof(tbl));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
 
@@ -87,7 +82,7 @@ namespace DocxToPdf.Parsing {
 			return tableModel;
 		}
 
-		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, string? defaultBgHex, MediaResolver mediaResolver, ParagraphParser? paragraphParser) {
+		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, string? defaultBgHex, MediaResolver mediaResolver, IParagraphParser? paragraphParser) {
 			TableCellModel cellModel = new TableCellModel {
 				BackgroundColorHex = defaultBgHex,
 				Padding = new CellPaddingModel {

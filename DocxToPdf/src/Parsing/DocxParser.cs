@@ -10,13 +10,11 @@ namespace DocxToPdf.Parsing {
 	/// <summary>
 	/// Provides functionality to parse OpenXML <see cref="WordprocessingDocument"/> structures into an in-memory <see cref="DocumentModel"/>.
 	/// </summary>
-	public class DocxParser {
-		/// <summary>
-		/// Parses a WordprocessingDocument package into a <see cref="DocumentModel"/>.
-		/// </summary>
-		/// <param name="wordDoc">The OpenXML WordprocessingDocument instance. Cannot be null.</param>
-		/// <returns>A populated <see cref="DocumentModel"/>.</returns>
-		/// <exception cref="ArgumentNullException">Thrown when <paramref name="wordDoc"/> is null.</exception>
+	public class DocxParser : IDocxParser {
+		/// <inheritdoc />
+		public DocumentModel ParseDocument(WordprocessingDocument wordDoc) => Parse(wordDoc);
+
+		/// <inheritdoc />
 		public static DocumentModel Parse(WordprocessingDocument wordDoc) {
 			if (wordDoc == null) throw new ArgumentNullException(nameof(wordDoc));
 
