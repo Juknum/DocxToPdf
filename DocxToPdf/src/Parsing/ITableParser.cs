@@ -13,6 +13,6 @@ namespace DocxToPdf.Parsing {
 		/// <param name="mediaResolver">The media resolver instance. Cannot be null.</param>
 		/// <param name="paragraphParser">Optional paragraph parser instance for cell content.</param>
 		/// <returns>A populated <see cref="TableModel"/>.</returns>
-		TableModel ParseTable(Table tbl, MediaResolver mediaResolver, IParagraphParser? paragraphParser = null);
+		TableModel ParseTable(Table? tbl, MediaResolver? mediaResolver, IParagraphParser? paragraphParser = null);
 	}
 }

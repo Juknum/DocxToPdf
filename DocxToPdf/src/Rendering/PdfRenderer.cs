@@ -26,10 +26,10 @@ namespace DocxToPdf.Rendering {
 	/// </summary>
 	public class PdfRenderer : IPdfRenderer {
 		/// <inheritdoc />
-		public PdfDocument RenderDocument(DocumentModel documentModel) => Render(documentModel);
+		public PdfDocument RenderDocument(DocumentModel? documentModel) => Render(documentModel);
 
 		/// <inheritdoc />
-		public static PdfDocument Render(DocumentModel documentModel) {
+		public static PdfDocument Render(DocumentModel? documentModel) {
 			if (documentModel == null) throw new ArgumentNullException(nameof(documentModel));
 
 			PdfDocument pdf = new();

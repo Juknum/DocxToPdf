@@ -13,6 +13,6 @@ namespace DocxToPdf.Rendering {
 		/// <param name="documentModel">The document model to render. Cannot be null.</param>
 		/// <returns>A populated <see cref="PdfDocument"/> instance.</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="documentModel"/> is null.</exception>
-		PdfDocument RenderDocument(DocumentModel documentModel);
+		PdfDocument RenderDocument(DocumentModel? documentModel);
 	}
 }

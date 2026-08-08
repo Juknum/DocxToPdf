@@ -22,7 +22,7 @@ namespace ConsoleApp {
 		/// <returns>List of generated PNG image file paths.</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="pdfPath"/> or <paramref name="outputDir"/> is null.</exception>
 		/// <exception cref="FileNotFoundException">Thrown when <paramref name="pdfPath"/> does not exist.</exception>
-		public static List<string> ConvertPdfToImages(string pdfPath, string outputDir, string filePrefix = "page", int dpi = 150, double scale = 0.5) {
+		public static List<string> ConvertPdfToImages(string? pdfPath, string? outputDir, string filePrefix = "page", int dpi = 150, double scale = 0.5) {
 			if (pdfPath == null) throw new ArgumentNullException(nameof(pdfPath));
 			if (outputDir == null) throw new ArgumentNullException(nameof(outputDir));
 
@@ -74,7 +74,7 @@ namespace ConsoleApp {
 		/// <summary>
 		/// Renders pages from expected and actual PDF files into images for side-by-side visual comparison.
 		/// </summary>
-		public static void ComparePdfs(string expectedPdf, string actualPdf, string outputDir, int dpi = 150) {
+		public static void ComparePdfs(string? expectedPdf, string? actualPdf, string outputDir, int dpi = 150) {
 			Console.WriteLine($"=== PDF Page Image Comparison ===");
 			Console.WriteLine($"Expected: {expectedPdf}");
 			Console.WriteLine($"Actual:   {actualPdf}");
@@ -152,7 +152,7 @@ namespace ConsoleApp {
 		/// <param name="colorTolerance">Color channel RGB difference tolerance.</param>
 		/// <returns>Similarity score between 0.0 (0% match) and 1.0 (100% match).</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="img1"/> or <paramref name="img2"/> is null.</exception>
-		public static double CompareImages(SKBitmap img1, SKBitmap img2, byte colorTolerance = 30) {
+		public static double CompareImages(SKBitmap? img1, SKBitmap? img2, byte colorTolerance = 30) {
 			if (img1 == null) throw new ArgumentNullException(nameof(img1));
 			if (img2 == null) throw new ArgumentNullException(nameof(img2));
 			int minWidth = Math.Min(img1.Width, img2.Width);

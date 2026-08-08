@@ -19,13 +19,13 @@ namespace DocxToPdf {
 		}
 
 		/// <inheritdoc />
-		public DocumentModel ParseDocument(string wordFilePath) => Parse(wordFilePath);
+		public DocumentModel ParseDocument(string? wordFilePath) => Parse(wordFilePath);
 
 		/// <inheritdoc />
-		public void ConvertDocument(string wordFilePath, string outputPdfFilePath) => Convert(wordFilePath, outputPdfFilePath);
+		public void ConvertDocument(string? wordFilePath, string? outputPdfFilePath) => Convert(wordFilePath, outputPdfFilePath);
 
 		/// <inheritdoc />
-		public static DocumentModel Parse(string wordFilePath) {
+		public static DocumentModel Parse(string? wordFilePath) {
 			if (wordFilePath == null) throw new ArgumentNullException(nameof(wordFilePath));
 
 			if (!File.Exists(wordFilePath)) {
@@ -37,7 +37,7 @@ namespace DocxToPdf {
 		}
 
 		/// <inheritdoc />
-		public static void Convert(string wordFilePath, string outputPdfFilePath) {
+		public static void Convert(string? wordFilePath, string? outputPdfFilePath) {
 			if (wordFilePath == null) throw new ArgumentNullException(nameof(wordFilePath));
 			if (outputPdfFilePath == null) throw new ArgumentNullException(nameof(outputPdfFilePath));
 

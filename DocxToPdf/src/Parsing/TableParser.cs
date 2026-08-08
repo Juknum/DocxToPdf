@@ -14,7 +14,7 @@ namespace DocxToPdf.Parsing {
 		private readonly IStyleResolver _styleResolver = styleResolver ?? throw new ArgumentNullException(nameof(styleResolver));
 
 		/// <inheritdoc />
-		public TableModel ParseTable(Table tbl, MediaResolver mediaResolver, IParagraphParser? paragraphParser = null) {
+		public TableModel ParseTable(Table? tbl, MediaResolver? mediaResolver, IParagraphParser? paragraphParser = null) {
 			if (tbl == null) throw new ArgumentNullException(nameof(tbl));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
 
@@ -82,7 +82,7 @@ namespace DocxToPdf.Parsing {
 			return tableModel;
 		}
 
-		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, string? defaultBgHex, MediaResolver mediaResolver, IParagraphParser? paragraphParser) {
+		private TableCellModel ParseTableCell(TableCell tc, BordersModel defaultBorders, CellPaddingModel defaultPadding, string? defaultBgHex, MediaResolver? mediaResolver, IParagraphParser? paragraphParser) {
 			TableCellModel cellModel = new TableCellModel {
 				BackgroundColorHex = defaultBgHex,
 				Padding = new CellPaddingModel {

@@ -19,7 +19,7 @@ namespace DocxToPdf.Parsing {
 		private readonly ITableParser _tableParser = tableParser ?? throw new ArgumentNullException(nameof(tableParser));
 
 		/// <inheritdoc />
-		public HeaderFooterModel? ParseHeader(HeaderReference headerRef) {
+		public HeaderFooterModel? ParseHeader(HeaderReference? headerRef) {
 			if (headerRef?.Id?.Value == null) return null;
 
 			HeaderPart? headerPart = _wordDoc.MainDocumentPart?.GetPartById(headerRef.Id.Value) as HeaderPart;
@@ -35,7 +35,7 @@ namespace DocxToPdf.Parsing {
 		}
 
 		/// <inheritdoc />
-		public HeaderFooterModel? ParseFooter(FooterReference footerRef) {
+		public HeaderFooterModel? ParseFooter(FooterReference? footerRef) {
 			if (footerRef?.Id?.Value == null) return null;
 
 			FooterPart? footerPart = _wordDoc.MainDocumentPart?.GetPartById(footerRef.Id.Value) as FooterPart;

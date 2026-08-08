@@ -12,14 +12,14 @@ namespace DocxToPdf.Parsing {
 		/// </summary>
 		/// <param name="drawing">The OpenXML Drawing element.</param>
 		/// <returns>A populated <see cref="DrawingModel"/> or null if drawing object cannot be resolved.</returns>
-		DrawingModel? ExtractDrawing(Drawing drawing);
+		DrawingModel? ExtractDrawing(Drawing? drawing);
 
 		/// <summary>
 		/// Extracts a <see cref="DrawingModel"/> from legacy VML <see cref="Picture"/> elements.
 		/// </summary>
 		/// <param name="pict">The OpenXML Picture element.</param>
 		/// <returns>A populated <see cref="DrawingModel"/> or null if unresolvable.</returns>
-		DrawingModel? ExtractPict(Picture pict);
+		DrawingModel? ExtractPict(Picture? pict);
 
 		/// <summary>
 		/// Extracts binary image data by relationship ID and creates a <see cref="DrawingModel"/>.
@@ -29,6 +29,6 @@ namespace DocxToPdf.Parsing {
 		/// <param name="cx">Width in EMUs.</param>
 		/// <param name="cy">Height in EMUs.</param>
 		/// <returns>A populated <see cref="DrawingModel"/> or null if image part is missing.</returns>
-		DrawingModel? ExtractImageByRelationshipId(string relationshipId, DrawingPlacement placement, long cx, long cy);
+		DrawingModel? ExtractImageByRelationshipId(string? relationshipId, DrawingPlacement placement, long cx, long cy);
 	}
 }

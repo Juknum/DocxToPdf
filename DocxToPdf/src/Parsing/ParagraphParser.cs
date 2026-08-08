@@ -15,7 +15,7 @@ namespace DocxToPdf.Parsing {
 		private readonly INumberingResolver _numberingResolver = numberingResolver ?? throw new ArgumentNullException(nameof(numberingResolver));
 
 		/// <inheritdoc />
-		public ParagraphModel ParseParagraph(Paragraph p, MediaResolver mediaResolver) {
+		public ParagraphModel ParseParagraph(Paragraph? p, MediaResolver? mediaResolver) {
 			if (p == null) throw new ArgumentNullException(nameof(p));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
 
@@ -70,7 +70,7 @@ namespace DocxToPdf.Parsing {
 		}
 
 		/// <inheritdoc />
-		public List<IBlockElement> ParseParagraphToElements(Paragraph p, MediaResolver mediaResolver, TableParser? tableParser = null) {
+		public List<IBlockElement> ParseParagraphToElements(Paragraph? p, MediaResolver? mediaResolver, TableParser? tableParser = null) {
 			if (p == null) throw new ArgumentNullException(nameof(p));
 			if (mediaResolver == null) throw new ArgumentNullException(nameof(mediaResolver));
 			List<IBlockElement> elements = new List<IBlockElement>();

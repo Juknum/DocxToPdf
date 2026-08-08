@@ -13,6 +13,6 @@ namespace DocxToPdf.Parsing {
 		/// <param name="wordDoc">The input WordprocessingDocument package. Cannot be null.</param>
 		/// <returns>A populated <see cref="DocumentModel"/> instance.</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="wordDoc"/> is null.</exception>
-		DocumentModel ParseDocument(WordprocessingDocument wordDoc);
+		DocumentModel ParseDocument(WordprocessingDocument? wordDoc);
 	}
 }

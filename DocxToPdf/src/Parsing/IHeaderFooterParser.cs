@@ -11,13 +11,13 @@ namespace DocxToPdf.Parsing {
 		/// </summary>
 		/// <param name="headerRef">HeaderReference element. Cannot be null.</param>
 		/// <returns>A populated <see cref="HeaderFooterModel"/> or null if header part is missing.</returns>
-		HeaderFooterModel? ParseHeader(HeaderReference headerRef);
+		HeaderFooterModel? ParseHeader(HeaderReference? headerRef);
 
 		/// <summary>
 		/// Parses a footer reference into a <see cref="HeaderFooterModel"/>.
 		/// </summary>
 		/// <param name="footerRef">FooterReference element. Cannot be null.</param>
 		/// <returns>A populated <see cref="HeaderFooterModel"/> or null if footer part is missing.</returns>
-		HeaderFooterModel? ParseFooter(FooterReference footerRef);
+		HeaderFooterModel? ParseFooter(FooterReference? footerRef);
 	}
 }

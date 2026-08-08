@@ -17,7 +17,7 @@ namespace DocxToPdf.Parsing {
 		private readonly OpenXmlPartContainer _partContainer = partContainer ?? throw new ArgumentNullException(nameof(partContainer));
 
 		/// <inheritdoc />
-		public DrawingModel? ExtractDrawing(Drawing drawing) {
+		public DrawingModel? ExtractDrawing(Drawing? drawing) {
 			if (drawing == null) return null;
 
 			Wp.Inline? inline = drawing.GetFirstChild<Wp.Inline>();
@@ -134,7 +134,7 @@ namespace DocxToPdf.Parsing {
 		}
 
 		/// <inheritdoc />
-		public DrawingModel? ExtractPict(Picture pict) {
+		public DrawingModel? ExtractPict(Picture? pict) {
 			if (pict == null) return null;
 
 			string? relationshipId = FindBlipRelationshipId(pict);
@@ -146,12 +146,12 @@ namespace DocxToPdf.Parsing {
 		}
 
 		/// <inheritdoc />
-		public DrawingModel? ExtractImageByRelationshipId(string relationshipId, DrawingPlacement placement, long cx, long cy) {
+		public DrawingModel? ExtractImageByRelationshipId(string? relationshipId, DrawingPlacement placement, long cx, long cy) {
 			if (string.IsNullOrEmpty(relationshipId)) return null;
 
 			ImagePart? imagePart = null;
 			try {
-				imagePart = _partContainer.GetPartById(relationshipId) as ImagePart;
+				imagePart = _partContainer.GetPartById(relationshipId!) as ImagePart;
 			} catch {
 				return null;
 			}
@@ -168,7 +168,7 @@ namespace DocxToPdf.Parsing {
 			}
 
 			return new DrawingModel {
-				RelationshipId = relationshipId,
+				RelationshipId = relationshipId!,
 				ImageData = imageData,
 				ContentType = imagePart.ContentType ?? MediaConstants.PngContentType,
 				WidthPt = TwipConverter.EmusToPoints(cx),

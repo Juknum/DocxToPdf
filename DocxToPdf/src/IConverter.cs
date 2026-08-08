@@ -14,7 +14,7 @@ namespace DocxToPdf {
 		/// <returns>A populated <see cref="DocumentModel"/> representing the structure of the document.</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="wordFilePath"/> is null.</exception>
 		/// <exception cref="FileNotFoundException">Thrown when <paramref name="wordFilePath"/> does not exist.</exception>
-		DocumentModel ParseDocument(string wordFilePath);
+		DocumentModel ParseDocument(string? wordFilePath);
 
 		/// <summary>
 		/// Converts a DOCX file at the specified input path into a rendered PDF file at the target output path.
@@ -23,6 +23,6 @@ namespace DocxToPdf {
 		/// <param name="outputPdfFilePath">The destination file path for the generated PDF document. Cannot be null.</param>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="wordFilePath"/> or <paramref name="outputPdfFilePath"/> is null.</exception>
 		/// <exception cref="FileNotFoundException">Thrown when <paramref name="wordFilePath"/> does not exist.</exception>
-		void ConvertDocument(string wordFilePath, string outputPdfFilePath);
+		void ConvertDocument(string? wordFilePath, string? outputPdfFilePath);
 	}
 }

@@ -12,10 +12,10 @@ namespace DocxToPdf.Parsing {
 	/// </summary>
 	public class DocxParser : IDocxParser {
 		/// <inheritdoc />
-		public DocumentModel ParseDocument(WordprocessingDocument wordDoc) => Parse(wordDoc);
+		public DocumentModel ParseDocument(WordprocessingDocument? wordDoc) => Parse(wordDoc);
 
 		/// <inheritdoc />
-		public static DocumentModel Parse(WordprocessingDocument wordDoc) {
+		public static DocumentModel Parse(WordprocessingDocument? wordDoc) {
 			if (wordDoc == null) throw new ArgumentNullException(nameof(wordDoc));
 
 			if (wordDoc.MainDocumentPart?.Document?.Body == null) {
