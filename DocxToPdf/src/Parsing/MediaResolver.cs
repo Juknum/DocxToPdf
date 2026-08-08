@@ -114,8 +114,8 @@ namespace DocxToPdf.Parsing {
 			}
 
 			return new DrawingModel {
-				RelationshipId = relationshipId,
-				ImageData = imageData,
+				RelationshipId = relationshipId ?? string.Empty,
+				ImageData = imageData ?? System.Array.Empty<byte>(),
 				ContentType = contentType,
 				WidthPt = TwipConverter.EmusToPoints(cx),
 				HeightPt = TwipConverter.EmusToPoints(cy),
@@ -183,8 +183,9 @@ namespace DocxToPdf.Parsing {
 			}
 			foreach (var srgbClr in container.Descendants<A.RgbColorModelHex>()) {
 				if (srgbClr.Ancestors().Any(a => a.LocalName == "ln" || a.LocalName == "outline")) continue;
-				if (!string.IsNullOrEmpty(srgbClr.Val?.Value)) {
-					return srgbClr.Val.Value;
+				string? hex = srgbClr.Val?.Value;
+				if (!string.IsNullOrEmpty(hex)) {
+					return hex;
 				}
 			}
 			return null;
@@ -193,8 +194,9 @@ namespace DocxToPdf.Parsing {
 		private string? FindBorderColor(OpenXmlElement container) {
 			foreach (var outline in container.Descendants<A.Outline>()) {
 				var srgbClr = outline.Descendants<A.RgbColorModelHex>().FirstOrDefault();
-				if (!string.IsNullOrEmpty(srgbClr?.Val?.Value)) {
-					return srgbClr.Val.Value;
+				string? hex = srgbClr?.Val?.Value;
+				if (!string.IsNullOrEmpty(hex)) {
+					return hex;
 				}
 			}
 			return null;
